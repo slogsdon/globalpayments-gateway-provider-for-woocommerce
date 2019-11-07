@@ -20,4 +20,14 @@
 		</properties>
 	</rule>
 
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+		<exclude-pattern>*</exclude-pattern>
+	</rule>
+
 </ruleset>
