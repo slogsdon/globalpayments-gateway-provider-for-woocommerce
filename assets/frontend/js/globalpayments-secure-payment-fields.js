@@ -1,30 +1,63 @@
 // @ts-check
 
-(function ($) {
-	var windowAny =
+(function ($, GlobalPayments, globalpayments_secure_payment_fields_params) {
+	/**
+	 * Frontend code for Global Payments in WooCommerce
+	 *
+	 * @param {object} options
+	 */
+	function GlobalPaymentsWooCommerce(options) {
 		/**
-		 * Casting `window` to any
+		 * Payment gateway id
 		 *
-		 * @type {any}
+		 * @type {string}
 		 */
-		(window);
-	var GlobalPayments = windowAny.GlobalPayments || {};
-
-	GlobalPayments.WooCommerce = function (options) {
-		this.id             = options.id;
-		this.fieldOptions   = options.field_options;
+		this.id = options.id;
+		/**
+		 * Payment field options
+		 *
+		 * @type {object}
+		 */
+		this.fieldOptions = options.field_options;
+		/**
+		 * Payment gateway options
+		 *
+		 * @type {object}
+		 */
 		this.gatewayOptions = options.gateway_options;
 		this.attachEventHandlers();
 	};
 
-	GlobalPayments.WooCommerce.prototype = {
+	GlobalPaymentsWooCommerce.prototype = {
+		/**
+		 * Add important event handlers for controlling the payment experience during checkout
+		 *
+		 * @returns
+		 */
 		attachEventHandlers: function () {
 			$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
 			$( '#order_review' ).on( 'click', '.payment_methods input.input-radio', this.toggleSubmitButtons.bind( this ) );
 		},
 
+		/**
+		 * Convenience funnction to get CSS selector for the built-in 'Place Order' button
+		 *
+		 * @returns {string}
+		 */
 		getPlaceOrderButtonSelector: function () { return '#place_order'; },
+
+		/**
+		 * Convenience funnction to get CSS selector for the custom 'Place Order' button's parent element
+		 *
+		 * @returns {string}
+		 */
 		getSubmitButtonTargetSelector: function () { return '#' + this.id + '-card-submit'; },
+
+		/**
+		 * Convenience funnction to get CSS selector for the radio input associated with our payment method
+		 *
+		 * @returns {string}
+		 */
 		getPaymentMethodRadioSelector: function () { return '#order_review .payment_methods input.input-radio[value="' + this.id + '"]'; },
 
 		/**
@@ -34,11 +67,13 @@
 		 * @returns
 		 */
 		renderPaymentFields: function () {
-			if ( ! windowAny.GlobalPayments.configure ) {
+			if ( ! GlobalPayments.configure ) {
 				console.log( 'Warning! Payment fields cannot be loaded' );
 				return;
 			}
 
+			// ensure the submit button's parent is on the page as this is added
+			// only after the initial page load
 			if ( $( this.getSubmitButtonTargetSelector() ).length === 0 ) {
 				this.createSubmitButtonTarget();
 			}
@@ -58,10 +93,16 @@
 			GlobalPayments.on( 'error', this.handleErrors.bind( this ) );
 		},
 
+		/**
+		 * Creates the parent for the submit button
+		 *
+		 * @returns
+		 */
 		createSubmitButtonTarget: function () {
-			var el           = document.createElement( 'div' );
-			el.id            = this.getSubmitButtonTargetSelector().replace( '#', '' );
-			el.className     = 'globalpayments ' + this.id + ' card-submit';
+			var el       = document.createElement( 'div' );
+			el.id        = this.getSubmitButtonTargetSelector().replace( '#', '' );
+			el.className = 'globalpayments ' + this.id + ' card-submit';
+			// match the visibilit of our payment form
 			el.style.display = $( this.getPaymentMethodRadioSelector() ).is( ':checked' )
 				? 'block' : 'none';
 			$( this.getPlaceOrderButtonSelector() ).after( el );
@@ -72,6 +113,8 @@
 		 * when one of our gateways is selected.
 		 *
 		 * @param {MouseEvent} e
+		 *
+		 * @returns
 		 */
 		toggleSubmitButtons: function ( e ) {
 			var target =
@@ -109,7 +152,7 @@
 			}
 
 			this.tokenResponse = JSON.stringify( response );
-			this._placeOrder();
+			this.placeOrder();
 		},
 
 		/**
@@ -122,7 +165,7 @@
 		 *
 		 * @returns
 		 */
-		_placeOrder: function () {
+		placeOrder: function () {
 			try {
 				var originalSubmit = $( this.getPlaceOrderButtonSelector() );
 				if ( originalSubmit ) {
@@ -133,7 +176,7 @@
 				/* om nom nom */
 			}
 
-			this.placeOrder();
+			$( 'form.checkout' ).submit();
 		},
 
 		/**
@@ -422,12 +465,24 @@
 		}
 	};
 
-	new GlobalPayments.WooCommerce( windowAny.globalpayments_secure_payment_fields_params );
+	new GlobalPaymentsWooCommerce( globalpayments_secure_payment_fields_params );
 }(
 	/**
-	 * Cast window to any
+	 * Global `jQuery` reference
 	 *
 	 * @type {any}
 	 */
-	(window).jQuery
+	(window).jQuery,
+	/**
+	 * Global `GlobalPayments` reference
+	 *
+	 * @type {any}
+	 */
+	(window).GlobalPayments,
+	/**
+	 * Global `globalpayments_secure_payment_fields_params` reference
+	 *
+	 * @type {any}
+	 */
+	(window).globalpayments_secure_payment_fields_params
 ));
