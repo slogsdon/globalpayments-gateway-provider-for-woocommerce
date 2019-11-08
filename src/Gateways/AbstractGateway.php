@@ -26,6 +26,8 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 		);
 	}
 
+	abstract function frontend_gateway_options();
+
 	public function woocommerce_credit_card_form_fields( $default_fields ) {
 		$field_format = $this->secure_payment_field_html_format();
 		$fields       = $this->secure_payment_fields();
@@ -36,7 +38,8 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 				$field_format,
 				esc_attr( $this->id ),
 				$field['class'],
-				$field['label']
+				$field['label'],
+				$field['messages']['validation']
 			);
 		}
 
@@ -73,7 +76,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 			'globalpayments_secure_payment_fields_params',
 			array(
 				'id'              => $this->id,
-				'gateway_options' => array( 'publicApiKey' => 'pkapi_cert_jKc1FtuyAydZhZfbB3' ),
+				'gateway_options' => $this->frontend_gateway_options(),
 				'field_options'   => $this->secure_payment_fields(),
 			)
 		);
@@ -103,26 +106,38 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 				'class'       => 'card-number',
 				'label'       => esc_html__( 'Credit Card Number', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( '•••• •••• •••• ••••', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'messages'    => array(
+					'validation' =>  esc_html__( 'Please enter a valid Credit Card Number', 'globalpayments-gateway-provider-for-woocommerce' ),
+				),
 			),
 			'card-expiry-field' => array(
 				'class'       => 'card-expiration',
 				'label'       => esc_html__( 'Credit Card Expiration Date', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( 'MM / YYYY', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'messages'    => array(
+					'validation' =>  esc_html__( 'Please enter a valid Credit Card Expiration Date', 'globalpayments-gateway-provider-for-woocommerce' ),
+				),
 			),
 			'card-cvc-field'    => array(
 				'class'       => 'card-cvv',
 				'label'       => esc_html__( 'Credit Card Security Code', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( '•••', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'messages'    => array(
+					'validation' =>  esc_html__( 'Please enter a valid Credit Card Security Code', 'globalpayments-gateway-provider-for-woocommerce' ),
+				),
 			),
 		);
 	}
 
 	protected function secure_payment_field_html_format() {
 		return (
-			'<p class="form-row form-row-wide">
+			'<div class="form-row form-row-wide globalpayments %1$s %2$s">
 				<label for="%1$s-%2$s">%3$s&nbsp;<span class="required">*</span></label>
-				<div id="%1$s-%2$s" class="globalpayments %1$s %2$s"></div>
-			</p>'
+				<div id="%1$s-%2$s"></div>
+				<ul class="woocommerce_error woocommerce-error validation-error" style="display: none;">
+					<li>%4$s</li>
+				</ul>
+			</div>'
 		);
 	}
 

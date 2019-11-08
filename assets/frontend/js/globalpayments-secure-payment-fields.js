@@ -197,13 +197,13 @@
 				var thisMonth      = new Date( now.getFullYear(), now.getMonth() );
 
 				if ( ! response.details.expiryYear || ! response.details.expiryMonth || expirationDate < thisMonth ) {
-					this.showValidationError( 'credit-card-expiration' );
+					this.showValidationError( 'card-expiration' );
 					result = false;
 				}
 			}
 
 			if ( response.details && ! response.details.cardSecurityCode ) {
-				this.showValidationError( 'credit-card-cvv' );
+				this.showValidationError( 'card-cvv' );
 				result = false;
 			}
 
@@ -216,18 +216,7 @@
 		 * @returns
 		 */
 		resetValidationErrors: function () {
-			$.each(
-				$( '.' + this.id + ' .validation-error' ),
-				/**
-				 * Acts on each validation error message element
-				 *
-				 * @param {number} i
-				 * @param {HTMLElement} el
-				 */
-				function (i, el) {
-					el.style.display = 'none';
-				}
-			);
+			$( '.' + this.id + ' .validation-error' ).hide();
 		},
 
 		/**
@@ -238,16 +227,7 @@
 		 * @returns
 		 */
 		showValidationError: function (fieldType) {
-			console.log( 'show error for ' + fieldType );
-			/**
-			 * Grab the specific message to display
-			 *
-			 * @type {HTMLElement}
-			 */
-			var el = document.querySelector( '.' + this.id + ' .' + fieldType + ' .validation-error' );
-			if ( el ) {
-				el.style.display = 'initial';
-			}
+			$( '.' + this.id + '.' + fieldType + ' .validation-error' ).show();
 		},
 
 		/**
@@ -268,7 +248,7 @@
 				var reason = error.reasons[i];
 				switch ( reason.code ) {
 					case 'INVALID_CARD_NUMBER':
-						this.showValidationError( 'credit-card-number' );
+						this.showValidationError( 'card-number' );
 						break;
 					default:
 						break;

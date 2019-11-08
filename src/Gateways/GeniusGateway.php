@@ -21,4 +21,8 @@ class GeniusGateway extends AbstractGateway {
 
 		$this->add_hooks();
 	}
+
+	public function frontend_gateway_options() {
+		return array( 'publicApiKey' => 'pkapi_cert_jKc1FtuyAydZhZfbB3' );
+	}
 }
