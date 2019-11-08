@@ -1,6 +1,11 @@
 // @ts-check
 
-(function ($, GlobalPayments, globalpayments_secure_payment_fields_params) {
+(function (
+	$,
+	wc_checkout_params,
+	GlobalPayments,
+	globalpayments_secure_payment_fields_params
+) {
 	/**
 	 * Frontend code for Global Payments in WooCommerce
 	 *
@@ -35,8 +40,20 @@
 		 * @returns
 		 */
 		attachEventHandlers: function () {
-			$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
+			// General
 			$( '#order_review' ).on( 'click', '.payment_methods input.input-radio', this.toggleSubmitButtons.bind( this ) );
+
+			// Order Pay
+			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) ) {
+				$( document ).ready( this.renderPaymentFields.bind( this ) );
+				return;
+			}
+
+			// Checkout
+			if ( wc_checkout_params.is_checkout ) {
+				$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
+				return;
+			}
 		},
 
 		/**
@@ -453,6 +470,12 @@
 	 * @type {any}
 	 */
 	(window).jQuery,
+	/**
+	 * Global `wc_checkout_params` reference
+	 *
+	 * @type {any}
+	 */
+	(window).wc_checkout_params,
 	/**
 	 * Global `GlobalPayments` reference
 	 *

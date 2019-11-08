@@ -24,6 +24,7 @@
         }
     },
     "scripts": {
+        "fix": [ "phpcbf" ],
         "test": [
             "phpcs .",
             "phpunit"
