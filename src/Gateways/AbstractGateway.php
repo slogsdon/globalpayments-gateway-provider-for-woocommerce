@@ -4,12 +4,71 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 defined( 'ABSPATH' ) || exit;
 
+use WC_Payment_Gateway_CC;
+use WC_Order;
+use GlobalPayments\Api\Entities\Transaction;
+
 use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
 
 /**
  * Shared gateway method implementations
  */
-abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
+abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
+	const TXN_TYPE_AUTHORIZE = 'authorize';
+	const TXN_TYPE_SALE      = 'sale';
+	const TXN_TYPE_VERIFY    = 'verify';
+
+	/**
+	 * Payment method enabled status
+	 *
+	 * This should be a boolean value, but inner WooCommerce checks require
+	 * this remain as a string value with possible options `yes` and `no`.
+	 *
+	 * @var string
+	 */
+	public $enabled;
+
+	/**
+	 * Payment method title shown to consumer
+	 *
+	 * @var string
+	 */
+	public $title;
+
+	/**
+	 * Action to perform on checkout
+	 *
+	 * Possible actions:
+	 *
+	 * - `authorize` - authorize the card without auto capturing
+	 * - `sale` - authorize the card with auto capturing
+	 * - `verify` - verify the card without authorizing
+	 *
+	 * @var string
+	 */
+	public $payment_action;
+
+	/**
+	 * Transaction descriptor to list on consumer's bank account statement
+	 *
+	 * @var string
+	 */
+	public $txn_descriptor;
+
+	/**
+	 * Control of WooCommerce's card storage (tokenization) support
+	 *
+	 * @var bool
+	 */
+	public $allow_card_saving;
+
+	/**
+	 * SDK client
+	 *
+	 * @var Clients\SdkClient
+	 */
+	protected $sdk_client;
+
 	public function __construct() {
 		$this->has_fields = true;
 		$this->supports   = array(
@@ -28,6 +87,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 			'subscription_payment_method_change_admin',
 			'multiple_subscriptions',
 		);
+		$this->sdk_client = new Clients\SdkClient();
 
 		$this->configure_method_settings();
 		$this->init_form_fields();
@@ -175,13 +235,13 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 				'payment_action'    => array(
 					'title'       => __( 'Payment Action', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'        => 'select',
-					'description' => __( 'Choose whether you wish to capture funds immediately, authorize payment only for a delayed capture or verify and capture when the order ships.', 'globalpayments-gateway-provider-for-woocommerce' ),
+					'description' => __( 'Choose whether you wish to capture funds immediately, authorize payment only for a delayed capture, or verify and capture when the order ships.', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'default'     => 'sale',
 					'desc_tip'    => true,
 					'options'     => array(
-						'sale'          => __( 'Capture', 'globalpayments-gateway-provider-for-woocommerce' ),
-						'authorization' => __( 'Authorize', 'globalpayments-gateway-provider-for-woocommerce' ),
-						'verify'        => __( 'Verify', 'globalpayments-gateway-provider-for-woocommerce' ),
+						self::TXN_TYPE_SALE      => __( 'Authorize + Capture', 'globalpayments-gateway-provider-for-woocommerce' ),
+						self::TXN_TYPE_AUTHORIZE => __( 'Authorize only', 'globalpayments-gateway-provider-for-woocommerce' ),
+						self::TXN_TYPE_VERIFY    => __( 'Verify only', 'globalpayments-gateway-provider-for-woocommerce' ),
 					),
 				),
 				'allow_card_saving' => array(
@@ -278,10 +338,89 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 
 		if ( 'no' === $this->enabled ) {
-			return $default_fields;
+			return;
 		}
 
 		// hooks only active when the gateway is enabled
 		add_filter( 'woocommerce_credit_card_form_fields', array( $this, 'woocommerce_credit_card_form_fields' ) );
+	}
+
+	/**
+	 * Handle payment functions
+	 *
+	 * @param int $order_id
+	 *
+	 * @return array
+	 */
+	public function process_payment( $order_id ) {
+		$order         = new WC_Order( $order_id );
+		$request       = $this->prepare_request( $this->payment_action, $order );
+		$response      = $this->submit_request( $request );
+		$is_successful = $this->handle_response( $this->payment_action, $response );
+
+		return array(
+			'result'   => $is_successful ? 'success' : 'failure',
+			'redirect' => $is_successful ? $this->get_return_url( $order ) : false,
+		);
+	}
+
+	/**
+	 * Creates the necessary request based on the transaction type
+	 *
+	 * @param string $txn_type
+	 * @param WC_Order $order
+	 *
+	 * @return array
+	 */
+	protected function prepare_request( $txn_type, $order ) {
+		$request = '';
+
+		switch ( $txn_type ) {
+			case self::TXN_TYPE_AUTHORIZE:
+				$request = Requests\AuthorizationRequest::class;
+				break;
+			case self::TXN_TYPE_SALE:
+				$request = Requests\SaleRequest::class;
+				break;
+			case self::TXN_TYPE_VERIFY:
+				$request = Requests\VerifyRequest::class;
+				break;
+		}
+
+		if ( empty( $request ) ) {
+			throw new \Exception( 'Cannot perform transaction' );
+		}
+
+		return ( new $request( $this->get_backend_gateway_options() ) )
+			->build( $order );
+	}
+
+	/**
+	 * Executes the prepared request
+	 *
+	 * @param array $request
+	 *
+	 * @return Transaction
+	 */
+	protected function submit_request( $request ) {
+		return $this->sdk_client->with( $request )->execute();
+	}
+
+	/**
+	 * Reacts to the transaction response
+	 *
+	 * @param string $txn_type
+	 * @param Transaction $response
+	 *
+	 * @return bool
+	 */
+	protected function handle_response( $txn_type, $response ) {
+		$is_successful = '00' === $response->responseCode; // phpcs:ignore WordPress.NamingConventions.ValidVariableName
+
+		if ( $is_successful && $response->token ) {
+			$this->save_card_to_customer( $response->token );
+		}
+
+		return $is_successful;
 	}
 }
