@@ -39,28 +39,35 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 	/**
 	 * Sets the necessary WooCommerce payment method settings for exposing the
 	 * gateway in the WooCommerce Admin.
-	 * 
+	 *
 	 * @return
 	 */
 	abstract public function configure_method_settings();
 
 	/**
 	 * Required options for proper client-side configuration.
-	 * 
+	 *
 	 * @return array
 	 */
 	abstract public function get_frontend_gateway_options();
 
 	/**
+	 * Required options for proper server-side configuration.
+	 *
+	 * @return array
+	 */
+	abstract public function get_backend_gateway_options();
+
+	/**
 	 * Custom admin options to configure the gateway-specific credentials, features, etc.
-	 * 
+	 *
 	 * @return array
 	 */
 	abstract public function get_gateway_form_fields();
 
 	/**
 	 * Sets the configurable merchant settings for use elsewhere in the class
-	 * 
+	 *
 	 * @return
 	 */
 	public function configure_merchant_settings() {
@@ -73,10 +80,10 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 
 	/**
 	 * Hook into `woocommerce_credit_card_form_fields` filter
-	 * 
+	 *
 	 * Replaces WooCommerce's default card inputs for empty container elements
 	 * for our secure payment fields (iframes).
-	 * 
+	 *
 	 * @return array
 	 */
 	public function woocommerce_credit_card_form_fields( $default_fields ) {
@@ -99,7 +106,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 
 	/**
 	 * Enqueues tokenization scripts from Global Payments and WooCommerce
-	 * 
+	 *
 	 * @return
 	 */
 	public function tokenization_script() {
@@ -143,7 +150,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 
 	/**
 	 * Configures shared gateway options
-	 * 
+	 *
 	 * @return
 	 */
 	public function init_form_fields() {
@@ -205,7 +212,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 	/**
 	 * Configuration for the secure payment fields. Used on server- and
 	 * client-side portions of the integration.
-	 * 
+	 *
 	 * @return array
 	 */
 	protected function secure_payment_fields() {
@@ -239,14 +246,14 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 
 	/**
 	 * The HTML template string for a secure payment field
-	 * 
+	 *
 	 * Format directives:
-	 * 
+	 *
 	 * 1) Gateway ID
 	 * 2) Field CSS class
 	 * 3) Field label
 	 * 4) Field validation message
-	 * 
+	 *
 	 * @return string
 	 */
 	protected function secure_payment_field_html_format() {
@@ -263,7 +270,7 @@ abstract class AbstractGateway extends \WC_Payment_Gateway_Cc {
 
 	/**
 	 * Adds necessary gateway-specific hooks
-	 * 
+	 *
 	 * @return
 	 */
 	protected function add_hooks() {

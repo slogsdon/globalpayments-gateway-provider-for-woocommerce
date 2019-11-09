@@ -16,6 +16,10 @@ class GeniusGateway extends AbstractGateway {
 	}
 
 	public function get_frontend_gateway_options() {
-		return array( 'publicApiKey' => 'pkapi_cert_jKc1FtuyAydZhZfbB3' );
+		return array();
+	}
+
+	public function get_backend_gateway_options() {
+		return array();
 	}
 }
