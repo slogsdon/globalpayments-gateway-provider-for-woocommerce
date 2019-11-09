@@ -9,6 +9,7 @@
 	<!-- Exclude paths -->
 	<exclude-pattern>tests/</exclude-pattern>
 	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/wp-content/*</exclude-pattern>
 
 	<!-- Rules -->
 	<rule ref="Generic.Commenting" />
