@@ -168,7 +168,22 @@
 				return;
 			}
 
-			this.tokenResponse = JSON.stringify( response );
+			var tokenResponseElement =
+				/**
+				 * Get hidden
+				 *
+				 * @type {HTMLInputElement}
+				 */
+				(document.getElementById( this.id + '-token_response' ));
+			if ( ! tokenResponseElement) {
+				tokenResponseElement      = document.createElement( 'input' );
+				tokenResponseElement.id   = this.id + '-token_response';
+				tokenResponseElement.name = this.id + '[token_response]';
+				tokenResponseElement.type = 'hidden';
+				this.getForm().appendChild( tokenResponseElement );
+			}
+
+			tokenResponseElement.value = JSON.stringify( response );
 			this.placeOrder();
 		},
 
@@ -459,6 +474,17 @@
 		 */
 		getSubmitButtonText: function () {
 			return $( '#place_order' ).data( 'value' );
+		},
+
+		getForm: function () {
+			var checkoutForms = [
+				// Order Pay
+				'form#order_review',
+				// Checkout
+				'form[name="checkout"]'
+			];
+			var forms = document.querySelectorAll( checkoutForms.join( ',' ) );
+			return forms.item( 0 );
 		}
 	};
 
