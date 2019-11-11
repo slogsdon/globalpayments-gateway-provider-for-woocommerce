@@ -15,7 +15,7 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
  */
 abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	const TXN_TYPE_AUTHORIZE = 'authorize';
-	const TXN_TYPE_SALE      = 'sale';
+	const TXN_TYPE_SALE      = 'charge';
 	const TXN_TYPE_VERIFY    = 'verify';
 
 	/**
@@ -63,11 +63,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	public $allow_card_saving;
 
 	/**
-	 * SDK client
+	 * Gateway HTTP client
 	 *
-	 * @var Clients\SdkClient
+	 * @var Clients\ClientInterface
 	 */
-	protected $sdk_client;
+	protected $client;
 
 	public function __construct() {
 		$this->has_fields = true;
@@ -87,7 +87,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			'subscription_payment_method_change_admin',
 			'multiple_subscriptions',
 		);
-		$this->sdk_client = new Clients\SdkClient();
+		$this->client     = new Clients\SdkClient();
 
 		$this->configure_method_settings();
 		$this->init_form_fields();
@@ -136,6 +136,20 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		$this->payment_action    = $this->get_option( 'payment_action' );
 		$this->txn_descriptor    = $this->get_option( 'txn_descriptor' );
 		$this->allow_card_saving = $this->get_option( 'allow_card_saving' ) === 'yes';
+
+		foreach ( $this->get_gateway_form_fields() as $key => $options ) {
+			if ( ! property_exists( $this, $key ) ) {
+				continue;
+			}
+
+			$value = $this->get_option( $key );
+
+			if ( 'checkbox' === $options['type'] ) {
+				$value = 'yes' === $value;
+			}
+
+			$this->{$key} = $value;
+		}
 	}
 
 	/**
@@ -185,7 +199,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		wp_enqueue_script(
 			'globalpayments-secure-payment-fields-lib',
 			'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.3.0/globalpayments'
-				. ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js',
+			. ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js',
 			array(),
 			WC()->version,
 			true
@@ -318,7 +332,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	protected function secure_payment_field_html_format() {
 		return (
-			'<div class="form-row form-row-wide globalpayments %1$s %2$s">
+		'<div class="form-row form-row-wide globalpayments %1$s %2$s">
 				<label for="%1$s-%2$s">%3$s&nbsp;<span class="required">*</span></label>
 				<div id="%1$s-%2$s"></div>
 				<ul class="woocommerce_error woocommerce-error validation-error" style="display: none;">
@@ -354,9 +368,9 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	public function process_payment( $order_id ) {
 		$order         = new WC_Order( $order_id );
-		$request       = $this->prepare_request( $this->payment_action, $order );
+		$request       = $this->prepare_request( $order, $this->payment_action );
 		$response      = $this->submit_request( $request );
-		$is_successful = $this->handle_response( $this->payment_action, $response );
+		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
@@ -367,60 +381,67 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	/**
 	 * Creates the necessary request based on the transaction type
 	 *
-	 * @param string $txn_type
 	 * @param WC_Order $order
+	 * @param string $txn_type
 	 *
-	 * @return array
+	 * @return Requests\RequestInterface
 	 */
-	protected function prepare_request( $txn_type, $order ) {
-		$request = '';
+	protected function prepare_request( WC_Order $order, $txn_type ) {
+		$map = array(
+			self::TXN_TYPE_AUTHORIZE => Requests\AuthorizationRequest::class,
+			self::TXN_TYPE_SALE      => Requests\SaleRequest::class,
+			self::TXN_TYPE_VERIFY    => Requests\VerifyRequest::class,
+		);
 
-		switch ( $txn_type ) {
-			case self::TXN_TYPE_AUTHORIZE:
-				$request = Requests\AuthorizationRequest::class;
-				break;
-			case self::TXN_TYPE_SALE:
-				$request = Requests\SaleRequest::class;
-				break;
-			case self::TXN_TYPE_VERIFY:
-				$request = Requests\VerifyRequest::class;
-				break;
-		}
-
-		if ( empty( $request ) ) {
+		if ( ! isset( $map[ $txn_type ] ) ) {
 			throw new \Exception( 'Cannot perform transaction' );
 		}
 
-		return ( new $request( $this->get_backend_gateway_options() ) )
-			->build( $order );
+		$request = $map[ $txn_type ];
+		return new $request( $order, $this->get_backend_gateway_options() );
 	}
 
 	/**
 	 * Executes the prepared request
 	 *
-	 * @param array $request
+	 * @param Requests\RequestInterface $request
 	 *
 	 * @return Transaction
 	 */
-	protected function submit_request( $request ) {
-		return $this->sdk_client->with( $request )->execute();
+	protected function submit_request( Requests\RequestInterface $request ) {
+		return $this->client->set_request( $request )->execute();
 	}
 
 	/**
 	 * Reacts to the transaction response
 	 *
-	 * @param string $txn_type
+	 * @param Requests\RequestInterface $request
 	 * @param Transaction $response
 	 *
 	 * @return bool
 	 */
-	protected function handle_response( $txn_type, $response ) {
-		$is_successful = '00' === $response->responseCode; // phpcs:ignore WordPress.NamingConventions.ValidVariableName
-
-		if ( $is_successful && $response->token ) {
-			$this->save_card_to_customer( $response->token );
+	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
+		if ( '00' !== $response->responseCode ) {
+			return false;
 		}
 
-		return $is_successful;
+		$handlers = array(
+			Handlers\PaymentActionHandler::class,
+			Handlers\DelayedAuthorizationHandler::class,
+			Handlers\PaymentTokenHandler::class,
+		);
+
+		foreach ( $handlers as $handler ) {
+			/**
+			 * Current handler
+			 *
+			 * @var Handlers\HandlerInterface $h
+			 */
+			$h = new $handler( $request, $response );
+			$h->handle();
+		}
+
+		return true;
 	}
 }
