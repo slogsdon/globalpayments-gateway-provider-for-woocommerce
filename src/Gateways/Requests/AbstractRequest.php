@@ -42,7 +42,7 @@ abstract class AbstractRequest implements RequestInterface {
 	 * @param WC_Order $order
 	 * @param array $config
 	 */
-	public function __construct( $gateway_id, WC_Order $order = null, array $config = [] ) {
+	public function __construct( $gateway_id, WC_Order $order = null, array $config = array() ) {
 		$this->gateway_id = $gateway_id;
 		$this->order      = $order;
 		$this->config     = $config;
@@ -51,10 +51,10 @@ abstract class AbstractRequest implements RequestInterface {
 	}
 
 	public function get_default_args() {
-		return [
+		return array(
 			RequestArg::SERVICES_CONFIG => $this->config,
 			RequestArg::TXN_TYPE        => $this->get_transaction_type(),
-		];
+		);
 	}
 
 	public function get_request_data( $key = null ) {

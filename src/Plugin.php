@@ -28,7 +28,7 @@ class Plugin {
 			return;
 		}
 
-		add_filter( 'woocommerce_payment_gateways', [ self::class, 'add_gateways' ] );
+		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
 	}
 
 	/**
@@ -39,10 +39,10 @@ class Plugin {
 	 * @return string[]
 	 */
 	public static function add_gateways( $methods ) {
-		$gateways = [
+		$gateways = array(
 			Gateways\HeartlandGateway::class,
 			Gateways\GeniusGateway::class,
-		];
+		);
 
 		foreach ( $gateways as $gateway ) {
 			$methods[] = $gateway;

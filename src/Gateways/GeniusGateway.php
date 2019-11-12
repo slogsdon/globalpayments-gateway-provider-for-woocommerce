@@ -12,14 +12,14 @@ class GeniusGateway extends AbstractGateway {
 	}
 
 	public function get_gateway_form_fields() {
-		return [];
+		return array();
 	}
 
 	public function get_frontend_gateway_options() {
-		return [];
+		return array();
 	}
 
 	public function get_backend_gateway_options() {
-		return [];
+		return array();
 	}
 }
