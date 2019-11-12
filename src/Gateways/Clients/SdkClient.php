@@ -38,8 +38,18 @@ class SdkClient implements ClientInterface {
 		AbstractGateway::TXN_TYPE_VERIFY,
 	];
 
+	/**
+	 * Card data
+	 *
+	 * @var CreditCardData
+	 */
 	protected $card_data = null;
 
+	/**
+	 * Previous transaction
+	 *
+	 * @var Transaction
+	 */
 	protected $previous_transaction = null;
 
 	public function set_request( RequestInterface $request ) {
@@ -55,7 +65,14 @@ class SdkClient implements ClientInterface {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
 		$this->prepare_builder( $builder );
-		return $builder->execute();
+		$response = $builder->execute();
+
+		if ( $response->token ) {
+			$this->card_data->token = $response->token;
+			$this->card_data->updateTokenExpiry();
+		}
+
+		return $response;
 	}
 
 	protected function prepare_builder( TransactionBuilder $builder ) {
@@ -76,11 +93,6 @@ class SdkClient implements ClientInterface {
 	 * @return TransactionBuilder
 	 */
 	protected function get_transaction_builder() {
-		/**
-		 * Builder subject
-		 *
-		 * @var CreditCardData|Transaction $subject
-		 */
 		$subject =
 			in_array( $this->args[ RequestArg::TXN_TYPE ], $this->auth_transactions, true )
 			? $this->card_data : $this->previous_transaction;
