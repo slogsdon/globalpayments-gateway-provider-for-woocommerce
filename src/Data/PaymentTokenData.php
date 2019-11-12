@@ -48,9 +48,19 @@ class PaymentTokenData {
 	}
 
 	public function save_new_token( $multi_use_token ) {
+		$user_id        = get_current_user_id();
+		$current_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, $this->request->gateway_id );
+
+		// a card number should only have a single token stored
+		foreach ( $current_tokens as $t ) {
+			if ( $t->get_token() === $multi_use_token ) {
+				$t->delete( true );
+			}
+		}
+
 		$token = $this->get_single_use_token();
 		$token->set_token( $multi_use_token );
-		$token->set_user_id( get_current_user_id() );
+		$token->set_user_id( $user_id );
 		$token->set_gateway_id( $this->request->gateway_id );
 		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
 		$token->save();
