@@ -40,10 +40,6 @@ class PaymentTokenData {
 	public function get_token() {
 		$token = $this->get_multi_use_token();
 
-		if ( $token instanceof WC_Payment_Token_CC ) {
-			$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false );
-		}
-
 		if ( null === $token ) {
 			$token = $this->get_single_use_token();
 		}
@@ -56,7 +52,7 @@ class PaymentTokenData {
 		$token->set_token( $multi_use_token );
 		$token->set_user_id( get_current_user_id() );
 		$token->set_gateway_id( $this->request->gateway_id );
-		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false );
+		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
 		$token->save();
 	}
 
@@ -70,7 +66,7 @@ class PaymentTokenData {
 		$token   = new WC_Payment_Token_CC();
 
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName
-		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, $this->get_should_save_for_later() );
+		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, $this->get_should_save_for_later(), true );
 		$token->set_token( $data->paymentReference );
 
 		if ( isset( $data->details->cardLast4 ) ) {
@@ -109,6 +105,10 @@ class PaymentTokenData {
 
 		if ( null === $token || $token->get_user_id() !== get_current_user_id() ) {
 			return null;
+		}
+
+		if ( $token->get_meta( self::KEY_SHOULD_SAVE_TOKEN, true ) ) {
+			$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
 		}
 
 		return $token;

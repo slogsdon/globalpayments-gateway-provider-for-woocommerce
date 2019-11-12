@@ -4,6 +4,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Clients;
 
 use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
+use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServicesConfig;
@@ -75,6 +76,11 @@ class SdkClient implements ClientInterface {
 	 * @return TransactionBuilder
 	 */
 	protected function get_transaction_builder() {
+		/**
+		 * Builder subject
+		 *
+		 * @var CreditCardData|Transaction $subject
+		 */
 		$subject =
 			in_array( $this->args[ RequestArg::TXN_TYPE ], $this->auth_transactions, true )
 			? $this->card_data : $this->previous_transaction;
@@ -99,7 +105,7 @@ class SdkClient implements ClientInterface {
 			$token = $this->get_arg( RequestArg::CARD_DATA );
 			$this->prepare_card_data( $token );
 
-			if ( null !== $token && $token->get_meta( PaymentTokenData::KEY_SHOULD_SAVE_TOKEN ) ) {
+			if ( null !== $token && $token->get_meta( PaymentTokenData::KEY_SHOULD_SAVE_TOKEN, true ) ) {
 				$this->builder_args['requestMultiUseToken'] = [ true ];
 			}
 		}
