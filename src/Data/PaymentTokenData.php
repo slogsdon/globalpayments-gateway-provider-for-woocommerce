@@ -10,14 +10,14 @@ use WC_Payment_Token_CC;
 class PaymentTokenData {
 	const KEY_SHOULD_SAVE_TOKEN = 'should_save_for_later';
 
-	protected $card_type_map = array(
+	protected $card_type_map = [
 		'mastercard' => 'mastercard',
 		'visa'       => 'visa',
 		'discover'   => 'discover',
 		'amex'       => 'american express',
 		'diners'     => 'diners',
 		'jcb'        => 'jcb',
-	);
+	];
 
 	/**
 	 * Current request

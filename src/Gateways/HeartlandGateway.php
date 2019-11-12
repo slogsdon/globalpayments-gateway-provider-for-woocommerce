@@ -30,31 +30,31 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	public function get_gateway_form_fields() {
-		return array(
-			'public_key' => array(
+		return [
+			'public_key' => [
 				'title'       => __( 'Public Key', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Heartland Online Payments account.', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'default'     => '',
-			),
-			'secret_key' => array(
+			],
+			'secret_key' => [
 				'title'       => __( 'Secret Key', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Heartland Online Payments account.', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'default'     => '',
-			),
-		);
+			],
+		];
 	}
 
 	public function get_frontend_gateway_options() {
-		return array(
+		return [
 			'publicApiKey' => $this->public_key,
-		);
+		];
 	}
 
 	public function get_backend_gateway_options() {
-		return array(
+		return [
 			'secretApiKey' => $this->secret_key,
-		);
+		];
 	}
 }

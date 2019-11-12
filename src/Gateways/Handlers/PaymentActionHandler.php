@@ -5,11 +5,11 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Handlers;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 
 class PaymentActionHandler extends AbstractHandler {
-	protected $accepted_transaction_types = array(
+	protected $accepted_transaction_types = [
 		AbstractGateway::TXN_TYPE_AUTHORIZE,
 		AbstractGateway::TXN_TYPE_SALE,
 		AbstractGateway::TXN_TYPE_VERIFY,
-	);
+	];
 
 	public function handle() {
 		if ( null === $this->request->order ) {
@@ -22,7 +22,7 @@ class PaymentActionHandler extends AbstractHandler {
 			return;
 		}
 
-		$this->save_meta_to_order( $this->request->order, array( 'payment_action' => $txn_type ) );
+		$this->save_meta_to_order( $this->request->order, [ 'payment_action' => $txn_type ] );
 
 		if ( AbstractGateway::TXN_TYPE_VERIFY !== $txn_type ) {
 			$this->request->order->payment_complete( $this->response->transactionId );

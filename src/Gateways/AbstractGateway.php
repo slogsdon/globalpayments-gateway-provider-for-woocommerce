@@ -71,7 +71,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 	public function __construct() {
 		$this->has_fields = true;
-		$this->supports   = array(
+		$this->supports   = [
 			'products',
 			'refunds',
 			'tokenization',
@@ -86,7 +86,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			'subscription_payment_method_change_customer',
 			'subscription_payment_method_change_admin',
 			'multiple_subscriptions',
-		);
+		];
 		$this->client     = new Clients\SdkClient();
 
 		$this->configure_method_settings();
@@ -163,7 +163,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	public function woocommerce_credit_card_form_fields( $default_fields ) {
 		$field_format = $this->secure_payment_field_html_format();
 		$fields       = $this->secure_payment_fields();
-		$result       = array();
+		$result       = [];
 
 		foreach ( $fields as $key => $field ) {
 			$result[ $key ] = sprintf(
@@ -191,7 +191,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		wp_enqueue_style(
 			'globalpayments-secure-payment-fields',
 			Plugin::get_url( '/assets/frontend/css/globalpayments-secure-payment-fields.css' ),
-			array(),
+			[],
 			WC()->version
 		);
 
@@ -200,25 +200,25 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			'globalpayments-secure-payment-fields-lib',
 			'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.3.0/globalpayments'
 			. ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js',
-			array(),
+			[],
 			WC()->version,
 			true
 		);
 		wp_enqueue_script(
 			'globalpayments-secure-payment-fields',
 			Plugin::get_url( '/assets/frontend/js/globalpayments-secure-payment-fields.js' ),
-			array( 'globalpayments-secure-payment-fields-lib', 'jquery' ),
+			[ 'globalpayments-secure-payment-fields-lib', 'jquery' ],
 			WC()->version,
 			true
 		);
 		wp_localize_script(
 			'globalpayments-secure-payment-fields',
 			'globalpayments_secure_payment_fields_params',
-			array(
+			[
 				'id'              => $this->id,
 				'gateway_options' => $this->get_frontend_gateway_options(),
 				'field_options'   => $this->secure_payment_fields(),
-			)
+			]
 		);
 	}
 
@@ -229,43 +229,43 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	public function init_form_fields() {
 		$this->form_fields = array_merge(
-			array(
-				'enabled' => array(
+			[
+				'enabled' => [
 					'title'   => __( 'Enable/Disable', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'    => 'checkbox',
 					'label'   => __( 'Enable Gateway', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'default' => 'yes',
-				),
-				'title'   => array(
+				],
+				'title'   => [
 					'title'       => __( 'Title', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'        => 'text',
 					'description' => __( 'This controls the title which the user sees during checkout.', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'default'     => __( 'Credit Card', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'desc_tip'    => true,
-				),
-			),
+				],
+			],
 			$this->get_gateway_form_fields(),
-			array(
-				'payment_action'    => array(
+			[
+				'payment_action'    => [
 					'title'       => __( 'Payment Action', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'        => 'select',
 					'description' => __( 'Choose whether you wish to capture funds immediately, authorize payment only for a delayed capture, or verify and capture when the order ships.', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'default'     => 'sale',
 					'desc_tip'    => true,
-					'options'     => array(
+					'options'     => [
 						self::TXN_TYPE_SALE      => __( 'Authorize + Capture', 'globalpayments-gateway-provider-for-woocommerce' ),
 						self::TXN_TYPE_AUTHORIZE => __( 'Authorize only', 'globalpayments-gateway-provider-for-woocommerce' ),
 						self::TXN_TYPE_VERIFY    => __( 'Verify only', 'globalpayments-gateway-provider-for-woocommerce' ),
-					),
-				),
-				'allow_card_saving' => array(
+					],
+				],
+				'allow_card_saving' => [
 					'title'       => __( 'Allow Card Saving', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'label'       => __( 'Allow Card Saving', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'        => 'checkbox',
 					'description' => 'Note: to use the card saving feature, you must have multi-use tokenization enabled on your Heartland account.',
 					'default'     => 'no',
-				),
-				'txn_descriptor'    => array(
+				],
+				'txn_descriptor'    => [
 					'title'             => __( 'Order Transaction Descriptor', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'              => 'text',
 					'description'       => sprintf(
@@ -275,11 +275,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 					),
 					'default'           => '',
 					'class'             => 'txn_descriptor',
-					'custom_attributes' => array(
+					'custom_attributes' => [
 						'maxlength' => 18,
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -290,32 +290,32 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return array
 	 */
 	protected function secure_payment_fields() {
-		return array(
-			'card-number-field' => array(
+		return [
+			'card-number-field' => [
 				'class'       => 'card-number',
 				'label'       => esc_html__( 'Credit Card Number', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( '•••• •••• •••• ••••', 'globalpayments-gateway-provider-for-woocommerce' ),
-				'messages'    => array(
+				'messages'    => [
 					'validation' => esc_html__( 'Please enter a valid Credit Card Number', 'globalpayments-gateway-provider-for-woocommerce' ),
-				),
-			),
-			'card-expiry-field' => array(
+				],
+			],
+			'card-expiry-field' => [
 				'class'       => 'card-expiration',
 				'label'       => esc_html__( 'Credit Card Expiration Date', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( 'MM / YYYY', 'globalpayments-gateway-provider-for-woocommerce' ),
-				'messages'    => array(
+				'messages'    => [
 					'validation' => esc_html__( 'Please enter a valid Credit Card Expiration Date', 'globalpayments-gateway-provider-for-woocommerce' ),
-				),
-			),
-			'card-cvc-field'    => array(
+				],
+			],
+			'card-cvc-field'    => [
 				'class'       => 'card-cvv',
 				'label'       => esc_html__( 'Credit Card Security Code', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'placeholder' => esc_html__( '•••', 'globalpayments-gateway-provider-for-woocommerce' ),
-				'messages'    => array(
+				'messages'    => [
 					'validation' => esc_html__( 'Please enter a valid Credit Card Security Code', 'globalpayments-gateway-provider-for-woocommerce' ),
-				),
-			),
-		);
+				],
+			],
+		];
 	}
 
 	public function save_payment_method_checkbox() {
@@ -357,17 +357,17 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	protected function add_hooks() {
 		// hooks always active for the gateway
-		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
+		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, [ $this, 'process_admin_options' ] );
 
 		if ( 'no' === $this->enabled ) {
 			return;
 		}
 
 		// hooks only active when the gateway is enabled
-		add_filter( 'woocommerce_credit_card_form_fields', array( $this, 'woocommerce_credit_card_form_fields' ) );
+		add_filter( 'woocommerce_credit_card_form_fields', [ $this, 'woocommerce_credit_card_form_fields' ] );
 
 		if ( is_add_payment_method_page() ) {
-			add_filter( 'wp_enqueue_scripts', array( $this, 'tokenization_script' ) );
+			add_filter( 'wp_enqueue_scripts', [ $this, 'tokenization_script' ] );
 		}
 	}
 
@@ -384,10 +384,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
 
-		return array(
+		return [
 			'result'   => $is_successful ? 'success' : 'failure',
 			'redirect' => $is_successful ? $this->get_return_url( $order ) : false,
-		);
+		];
 	}
 
 	/**
@@ -400,10 +400,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
 
-		return array(
+		return [
 			'result'   => $is_successful ? 'success' : 'failure',
 			'redirect' => wc_get_endpoint_url( 'payment-methods' ),
-		);
+		];
 	}
 
 	/**
@@ -415,11 +415,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return Requests\RequestInterface
 	 */
 	protected function prepare_request( $txn_type, WC_Order $order = null ) {
-		$map = array(
+		$map = [
 			self::TXN_TYPE_AUTHORIZE => Requests\AuthorizationRequest::class,
 			self::TXN_TYPE_SALE      => Requests\SaleRequest::class,
 			self::TXN_TYPE_VERIFY    => Requests\VerifyRequest::class,
-		);
+		];
 
 		if ( ! isset( $map[ $txn_type ] ) ) {
 			throw new \Exception( 'Cannot perform transaction' );
@@ -454,11 +454,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			return false;
 		}
 
-		$handlers = array(
+		$handlers = [
 			Handlers\PaymentActionHandler::class,
 			Handlers\DelayedAuthorizationHandler::class,
 			Handlers\PaymentTokenHandler::class,
-		);
+		];
 
 		foreach ( $handlers as $handler ) {
 			/**

@@ -22,20 +22,20 @@ class SdkClient implements ClientInterface {
 	 *
 	 * @var array
 	 */
-	protected $args = array();
+	protected $args = [];
 
 	/**
 	 * Prepared builder args
 	 *
 	 * @var array
 	 */
-	protected $builder_args = array();
+	protected $builder_args = [];
 
-	protected $auth_transactions = array(
+	protected $auth_transactions = [
 		AbstractGateway::TXN_TYPE_AUTHORIZE,
 		AbstractGateway::TXN_TYPE_SALE,
 		AbstractGateway::TXN_TYPE_VERIFY,
-	);
+	];
 
 	protected $card_data = null;
 
@@ -65,7 +65,7 @@ class SdkClient implements ClientInterface {
 				continue;
 			}
 
-			call_user_func_array( array( $builder, $method ), $args );
+			call_user_func_array( [ $builder, $method ], $args );
 		}
 	}
 
@@ -83,11 +83,11 @@ class SdkClient implements ClientInterface {
 
 	protected function prepare_request_objects() {
 		if ( $this->has_arg( RequestArg::AMOUNT ) ) {
-			$this->builder_args['amount'] = array( $this->get_arg( RequestArg::AMOUNT ) );
+			$this->builder_args['amount'] = [ $this->get_arg( RequestArg::AMOUNT ) ];
 		}
 
 		if ( $this->has_arg( RequestArg::CURRENCY ) ) {
-			$this->builder_args['currency'] = array( $this->get_arg( RequestArg::CURRENCY ) );
+			$this->builder_args['currency'] = [ $this->get_arg( RequestArg::CURRENCY ) ];
 		}
 
 		if ( $this->has_arg( RequestArg::CARD_DATA ) ) {
@@ -100,7 +100,7 @@ class SdkClient implements ClientInterface {
 			$this->prepare_card_data( $token );
 
 			if ( null !== $token && $token->get_meta( PaymentTokenData::KEY_SHOULD_SAVE_TOKEN ) ) {
-				$this->builder_args['requestMultiUseToken'] = array( true );
+				$this->builder_args['requestMultiUseToken'] = [ true ];
 			}
 		}
 
@@ -130,7 +130,7 @@ class SdkClient implements ClientInterface {
 
 		$name = strtolower( $address_type ) . 'Address';
 
-		$this->builder_args[ $name ] = array( $address, $address_type );
+		$this->builder_args[ $name ] = [ $address, $address_type ];
 	}
 
 	protected function has_arg( $arg_type ) {

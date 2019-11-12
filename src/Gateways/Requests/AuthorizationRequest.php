@@ -15,10 +15,10 @@ class AuthorizationRequest extends AbstractRequest {
 	public function get_args() {
 		$token = ( new PaymentTokenData( $this ) )->get_token();
 
-		return array(
+		return [
 			RequestArg::AMOUNT    => null !== $this->order ? $this->order->get_total() : null,
 			RequestArg::CURRENCY  => null !== $this->order ? $this->order->get_currency() : null,
 			RequestArg::CARD_DATA => $token,
-		);
+		];
 	}
 }

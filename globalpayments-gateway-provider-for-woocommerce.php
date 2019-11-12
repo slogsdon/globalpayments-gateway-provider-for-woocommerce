@@ -22,5 +22,5 @@ if ( version_compare( PHP_VERSION, '5.5.9', '<' ) ) {
 $autoloader = __DIR__ . '/vendor/autoload.php';
 if ( is_readable( $autoloader ) ) {
 	include_once $autoloader;
-	add_action( 'plugins_loaded', array( \GlobalPayments\WooCommercePaymentGatewayProvider\Plugin::class, 'init' ) );
+	add_action( 'plugins_loaded', [ \GlobalPayments\WooCommercePaymentGatewayProvider\Plugin::class, 'init' ] );
 }

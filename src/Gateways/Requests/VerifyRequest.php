@@ -15,8 +15,8 @@ class VerifyRequest extends AbstractRequest {
 	public function get_args() {
 		$token = ( new PaymentTokenData( $this ) )->get_token();
 
-		return array(
+		return [
 			RequestArg::CARD_DATA => $token,
-		);
+		];
 	}
 }
