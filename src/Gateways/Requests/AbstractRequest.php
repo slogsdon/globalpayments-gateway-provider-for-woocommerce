@@ -8,6 +8,13 @@ defined( 'ABSPATH' ) || exit;
 
 abstract class AbstractRequest implements RequestInterface {
 	/**
+	 * Gateway ID
+	 *
+	 * @var string
+	 */
+	public $gateway_id;
+
+	/**
 	 * Current WooCommerce order object
 	 *
 	 * @var WC_Order
@@ -29,23 +36,16 @@ abstract class AbstractRequest implements RequestInterface {
 	protected $data;
 
 	/**
-	 * Request multi-use token
-	 *
-	 * @var bool
-	 */
-	protected $request_token;
-
-	/**
 	 * Instantiates a new request
 	 *
+	 * @param string $gateway_id
 	 * @param WC_Order $order
 	 * @param array $config
-	 * @param bool $request_token
 	 */
-	public function __construct( WC_Order $order, array $config, $request_token = false ) {
-		$this->order         = $order;
-		$this->config        = $config;
-		$this->request_token = $request_token;
+	public function __construct( $gateway_id, WC_Order $order = null, array $config = array() ) {
+		$this->gateway_id = $gateway_id;
+		$this->order      = $order;
+		$this->config     = $config;
 
 		$this->data = $this->get_request_data();
 	}
@@ -54,7 +54,6 @@ abstract class AbstractRequest implements RequestInterface {
 		return array(
 			RequestArg::SERVICES_CONFIG => $this->config,
 			RequestArg::TXN_TYPE        => $this->get_transaction_type(),
-			RequestArg::REQUEST_TOKEN   => $this->request_token,
 		);
 	}
 
@@ -65,6 +64,6 @@ abstract class AbstractRequest implements RequestInterface {
 			return $_POST;
 		}
 
-		return $this->data[ $key ];
+		return wc_clean( $this->data[ $key ] );
 	}
 }

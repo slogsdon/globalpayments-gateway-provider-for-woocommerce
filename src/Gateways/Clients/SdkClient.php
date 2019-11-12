@@ -8,9 +8,11 @@ use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestArg;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestInterface;
+use WC_Payment_Token_CC;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -88,12 +90,18 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['currency'] = array( $this->get_arg( RequestArg::CURRENCY ) );
 		}
 
-		if ( $this->has_arg( RequestArg::REQUEST_TOKEN ) ) {
-			$this->builder_args['requestMultiUseToken'] = array( $this->get_arg( RequestArg::REQUEST_TOKEN ) );
-		}
-
 		if ( $this->has_arg( RequestArg::CARD_DATA ) ) {
-			$this->prepare_card_data( $this->get_arg( RequestArg::CARD_DATA ) );
+			/**
+			 * Get the request's single- or multi-use token
+			 *
+			 * @var \WC_Payment_Token_Cc $token
+			 */
+			$token = $this->get_arg( RequestArg::CARD_DATA );
+			$this->prepare_card_data( $token );
+
+			if ( null !== $token && $token->get_meta( PaymentTokenData::KEY_SHOULD_SAVE_TOKEN ) ) {
+				$this->builder_args['requestMultiUseToken'] = array( true );
+			}
 		}
 
 		if ( $this->has_arg( RequestArg::BILLING_ADDRESS ) ) {
@@ -105,9 +113,15 @@ class SdkClient implements ClientInterface {
 		}
 	}
 
-	protected function prepare_card_data( array $card_data ) {
-		$this->card_data        = new CreditCardData();
-		$this->card_data->token = $card_data['token'];
+	protected function prepare_card_data( WC_Payment_Token_CC $token = null ) {
+		if ( null === $token ) {
+			return;
+		}
+
+		$this->card_data           = new CreditCardData();
+		$this->card_data->token    = $token->get_token();
+		$this->card_data->expMonth = $token->get_expiry_month();
+		$this->card_data->expYear  = $token->get_expiry_year();
 	}
 
 	protected function prepare_address( $address_type, array $data ) {

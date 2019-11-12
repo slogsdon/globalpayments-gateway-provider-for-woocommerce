@@ -2,6 +2,9 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests;
 
+use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
+
 defined( 'ABSPATH' ) || exit;
 
 class VerifyRequest extends AbstractRequest {
@@ -10,15 +13,10 @@ class VerifyRequest extends AbstractRequest {
 	}
 
 	public function get_args() {
-		$gateway        = $this->get_request_data( 'payment_method' );
-		$token_response = json_decode( stripslashes( $this->get_request_data( $gateway )['token_response'] ) );
+		$token = ( new PaymentTokenData( $this ) )->get_token();
 
 		return array(
-			RequestArg::CARD_DATA =>
-				array(
-					// phpcs:ignore WordPress.NamingConventions.ValidVariableName
-					'token' => $token_response->paymentReference,
-				),
+			RequestArg::CARD_DATA => $token,
 		);
 	}
 }

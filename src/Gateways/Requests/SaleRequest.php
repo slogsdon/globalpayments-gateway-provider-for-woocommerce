@@ -2,6 +2,8 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests;
 
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
+
 defined( 'ABSPATH' ) || exit;
 
 class SaleRequest extends AuthorizationRequest {

@@ -8,11 +8,11 @@ interface RequestInterface {
 	/**
 	 * Instantiates a new request
 	 *
+	 * @param string $gateway_id
 	 * @param WC_Order $order
 	 * @param array $config
-	 * @param bool $request_token
 	 */
-	public function __construct( WC_Order $order, array $config, $request_token = false );
+	public function __construct( $gateway_id, WC_Order $order = null, array $config = array() );
 
 	/**
 	 * Gets transaction type for the request

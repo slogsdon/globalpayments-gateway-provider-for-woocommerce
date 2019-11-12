@@ -2,6 +2,7 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests;
 
+use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 
 defined( 'ABSPATH' ) || exit;
@@ -12,17 +13,12 @@ class AuthorizationRequest extends AbstractRequest {
 	}
 
 	public function get_args() {
-		$gateway        = $this->get_request_data( 'payment_method' );
-		$token_response = json_decode( stripslashes( $this->get_request_data( $gateway )['token_response'] ) );
+		$token = ( new PaymentTokenData( $this ) )->get_token();
 
 		return array(
-			RequestArg::AMOUNT    => $this->order->get_total(),
-			RequestArg::CURRENCY  => $this->order->get_currency(),
-			RequestArg::CARD_DATA =>
-				array(
-					// phpcs:ignore WordPress.NamingConventions.ValidVariableName
-					'token' => $token_response->paymentReference,
-				),
+			RequestArg::AMOUNT    => null !== $this->order ? $this->order->get_total() : null,
+			RequestArg::CURRENCY  => null !== $this->order ? $this->order->get_currency() : null,
+			RequestArg::CARD_DATA => $token,
 		);
 	}
 }

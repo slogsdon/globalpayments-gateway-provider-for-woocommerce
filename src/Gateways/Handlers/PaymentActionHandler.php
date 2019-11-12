@@ -12,6 +12,10 @@ class PaymentActionHandler extends AbstractHandler {
 	);
 
 	public function handle() {
+		if ( null === $this->request->order ) {
+			return;
+		}
+
 		$txn_type = $this->request->get_transaction_type();
 
 		if ( ! in_array( $txn_type, $this->accepted_transaction_types, true ) ) {

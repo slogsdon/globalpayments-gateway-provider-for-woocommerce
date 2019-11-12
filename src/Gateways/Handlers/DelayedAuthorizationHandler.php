@@ -6,7 +6,11 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 
 class DelayedAuthorizationHandler extends AbstractHandler {
 	public function handle() {
-		if ( ! AbstractGateway::TXN_TYPE_VERIFY === $this->request->get_transaction_type() ) {
+		if ( null === $this->request->order ) {
+			return;
+		}
+
+		if ( AbstractGateway::TXN_TYPE_VERIFY !== $this->request->get_transaction_type() ) {
 			return;
 		}
 

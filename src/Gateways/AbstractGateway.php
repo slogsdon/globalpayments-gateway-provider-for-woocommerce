@@ -318,6 +318,14 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		);
 	}
 
+	public function save_payment_method_checkbox() {
+		if ( ! $this->allow_card_saving ) {
+			return;
+		}
+
+		parent::save_payment_method_checkbox();
+	}
+
 	/**
 	 * The HTML template string for a secure payment field
 	 *
@@ -357,6 +365,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 		// hooks only active when the gateway is enabled
 		add_filter( 'woocommerce_credit_card_form_fields', array( $this, 'woocommerce_credit_card_form_fields' ) );
+
+		if ( is_add_payment_method_page() ) {
+			add_filter( 'wp_enqueue_scripts', array( $this, 'tokenization_script' ) );
+		}
 	}
 
 	/**
@@ -368,13 +380,29 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	public function process_payment( $order_id ) {
 		$order         = new WC_Order( $order_id );
-		$request       = $this->prepare_request( $order, $this->payment_action );
+		$request       = $this->prepare_request( $this->payment_action, $order );
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
 			'redirect' => $is_successful ? $this->get_return_url( $order ) : false,
+		);
+	}
+
+	/**
+	 * Handle adding new cards via 'My Account'
+	 *
+	 * @return array
+	 */
+	public function add_payment_method() {
+		$request       = $this->prepare_request( self::TXN_TYPE_VERIFY );
+		$response      = $this->submit_request( $request );
+		$is_successful = $this->handle_response( $request, $response );
+
+		return array(
+			'result'   => $is_successful ? 'success' : 'failure',
+			'redirect' => wc_get_endpoint_url( 'payment-methods' ),
 		);
 	}
 
@@ -386,7 +414,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 *
 	 * @return Requests\RequestInterface
 	 */
-	protected function prepare_request( WC_Order $order, $txn_type ) {
+	protected function prepare_request( $txn_type, WC_Order $order = null ) {
 		$map = array(
 			self::TXN_TYPE_AUTHORIZE => Requests\AuthorizationRequest::class,
 			self::TXN_TYPE_SALE      => Requests\SaleRequest::class,
@@ -398,7 +426,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		}
 
 		$request = $map[ $txn_type ];
-		return new $request( $order, $this->get_backend_gateway_options() );
+		return new $request( $this->id, $order, $this->get_backend_gateway_options() );
 	}
 
 	/**

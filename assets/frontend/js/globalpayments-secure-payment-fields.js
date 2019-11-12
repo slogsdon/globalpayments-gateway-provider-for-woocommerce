@@ -40,11 +40,21 @@
 		 * @returns
 		 */
 		attachEventHandlers: function () {
-			// General
-			$( '#order_review' ).on( 'click', '.payment_methods input.input-radio', this.toggleSubmitButtons.bind( this ) );
+			var that = this;
 
-			// Order Pay
-			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) ) {
+			// General
+			$( '#order_review, #add_payment_method' ).on( 'click', '.payment_methods input.input-radio', this.toggleSubmitButtons.bind( this ) );
+
+			// Saved payment methods
+			$( document.body ).on(
+				'updated_checkout wc-credit-card-form-init',
+				function () {
+					$( '.payment_method_' + that.id + ' .wc-saved-payment-methods' ).on( 'change', ':input.woocommerce-SavedPaymentMethods-tokenInput', that.toggleSubmitButtons.bind( that ) );
+				}
+			);
+
+			// Order Pay + Add payment method
+			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) || $( 'form#add_payment_method' ).length > 0 ) {
 				$( document ).ready( this.renderPaymentFields.bind( this ) );
 				return;
 			}
@@ -75,7 +85,14 @@
 		 *
 		 * @returns {string}
 		 */
-		getPaymentMethodRadioSelector: function () { return '#order_review .payment_methods input.input-radio[value="' + this.id + '"]'; },
+		getPaymentMethodRadioSelector: function () { return '.payment_methods input.input-radio[value="' + this.id + '"]'; },
+
+		/**
+		 * Convenience function to get CSS selector for stored card radio inputs
+		 *
+		 * @returns {string}
+		 */
+		getStoredPaymentMethodsRadioSelector: function () { return '.payment_method_' + this.id + ' .wc-saved-payment-methods input'; },
 
 		/**
 		 * Renders the payment fields using GlobalPayments.js. Each field is securely hosted on
@@ -119,30 +136,25 @@
 			var el       = document.createElement( 'div' );
 			el.id        = this.getSubmitButtonTargetSelector().replace( '#', '' );
 			el.className = 'globalpayments ' + this.id + ' card-submit';
-			// match the visibilit of our payment form
-			el.style.display = $( this.getPaymentMethodRadioSelector() ).is( ':checked' )
-				? 'block' : 'none';
 			$( this.getPlaceOrderButtonSelector() ).after( el );
+			// match the visibilit of our payment form
+			this.toggleSubmitButtons();
 		},
 
 		/**
 		 * Swaps the default WooCommerce 'Place Order' button for our iframe-d button
 		 * when one of our gateways is selected.
 		 *
-		 * @param {MouseEvent} e
-		 *
 		 * @returns
 		 */
-		toggleSubmitButtons: function ( e ) {
-			var target =
-				/**
-				 * Casting event target
-				 *
-				 * @type {HTMLInputElement}
-				 */
-				(e.currentTarget);
+		toggleSubmitButtons: function () {
+			var paymentGatewaySelected = $( this.getPaymentMethodRadioSelector() ).is( ':checked' );
+			var savedCardsAvailable    = $( this.getStoredPaymentMethodsRadioSelector() ).length > 0;
+			var newSavedCardSelected   = 'new' === $( this.getStoredPaymentMethodsRadioSelector() + ':checked' ).val();
 
-			if ( this.id === target.value ) {
+			var shouldBeVisible = (paymentGatewaySelected && ! savedCardsAvailable) || (savedCardsAvailable && newSavedCardSelected);
+
+			if (shouldBeVisible) {
 				// our gateway was selected
 				$( this.getSubmitButtonTargetSelector() ).show();
 				$( this.getPlaceOrderButtonSelector() ).hide();
@@ -208,7 +220,7 @@
 				/* om nom nom */
 			}
 
-			$( 'form.checkout' ).submit();
+			$( this.getForm() ).submit();
 		},
 
 		/**
@@ -473,7 +485,7 @@
 		 * @returns {string}
 		 */
 		getSubmitButtonText: function () {
-			return $( '#place_order' ).data( 'value' );
+			return $( '#place_order' ).data( 'value' ) || $( '#place_order' ).attr( 'value' );
 		},
 
 		getForm: function () {
@@ -481,7 +493,9 @@
 				// Order Pay
 				'form#order_review',
 				// Checkout
-				'form[name="checkout"]'
+				'form[name="checkout"]',
+				// Add payment method
+				'form#add_payment_method'
 			];
 			var forms = document.querySelectorAll( checkoutForms.join( ',' ) );
 			return forms.item( 0 );
@@ -501,7 +515,7 @@
 	 *
 	 * @type {any}
 	 */
-	(window).wc_checkout_params,
+	(window).wc_checkout_params || {},
 	/**
 	 * Global `GlobalPayments` reference
 	 *

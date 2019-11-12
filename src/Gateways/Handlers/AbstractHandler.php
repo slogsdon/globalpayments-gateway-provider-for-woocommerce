@@ -31,6 +31,7 @@ abstract class AbstractHandler implements HandlerInterface {
 		$this->request  = $request;
 		$this->response = $response;
 	}
+
 	/**
 	 * Save post meta to order
 	 *
