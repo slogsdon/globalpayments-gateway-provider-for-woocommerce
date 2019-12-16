@@ -6,7 +6,7 @@
     "type": "wordpress-plugin",
     "require": {
         "composer/installers": "^1.7",
-        "globalpayments/php-sdk": "dev-merchantware-integration"
+        "globalpayments/php-sdk": "dev-transIT-support"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.5",
@@ -36,6 +36,6 @@
         "fix": "Fix coding standards warnings/errors automatically with PHP Code Beautifier"
     },
     "repositories": [
-        { "type": "path", "url": "/Users/shane.logsdon/Code/docker/plugin-dev-environments/magento2/globalpayments-api" }
+        { "type": "git", "url": "git@github.hps.com:devportal/php-sdk-v3" }
     ]
 }

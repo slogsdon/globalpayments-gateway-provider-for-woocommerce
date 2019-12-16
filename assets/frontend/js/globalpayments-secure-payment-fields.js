@@ -121,6 +121,7 @@
 				}
 			);
 
+			cardForm.on( 'submit', 'click', this.blockOnSubmit.bind( this ) );
 			cardForm.on( 'token-success', this.handleResponse.bind( this ) );
 			cardForm.on( 'token-error', this.handleErrors.bind( this ) );
 			cardForm.on( 'error', this.handleErrors.bind( this ) );
@@ -282,6 +283,8 @@
 		 * @returns
 		 */
 		handleErrors: function ( error ) {
+			this.unblockOnError();
+
 			if ( ! error.reasons ) {
 				return;
 			}
@@ -488,6 +491,11 @@
 			return $( '#place_order' ).data( 'value' ) || $( '#place_order' ).attr( 'value' );
 		},
 
+		/**
+		 * Gets the current checkout form
+		 *
+		 * @returns {Element}
+		 */
 		getForm: function () {
 			var checkoutForms = [
 				// Order Pay
@@ -499,6 +507,40 @@
 			];
 			var forms = document.querySelectorAll( checkoutForms.join( ',' ) );
 			return forms.item( 0 );
+		},
+
+		/**
+		 * Blocks checkout UI
+		 *
+		 * Implementation pulled from `woocommerce/assets/js/frontend/checkout.js`
+		 *
+		 * @returns
+		 */
+		blockOnSubmit: function () {
+			var $form     = $( this.getForm() );
+			var form_data = $form.data();
+
+			if ( 1 !== form_data['blockUI.isBlocked'] ) {
+				$form.block(
+					{
+						message: null,
+						overlayCSS: {
+							background: '#fff',
+							opacity: 0.6
+						}
+					}
+				);
+			}
+		},
+
+		/**
+		 * Unblocks checkout UI
+		 *
+		 * @returns
+		 */
+		unblockOnError: function () {
+			var $form = $( this.getForm() );
+			$form.unblock();
 		}
 	};
 

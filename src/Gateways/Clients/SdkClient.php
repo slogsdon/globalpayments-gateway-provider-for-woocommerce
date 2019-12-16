@@ -6,6 +6,7 @@ use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
+use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
@@ -38,6 +39,11 @@ class SdkClient implements ClientInterface {
 		AbstractGateway::TXN_TYPE_VERIFY,
 	);
 
+	protected $client_transactions = array(
+		AbstractGateway::TXN_TYPE_CREATE_TRANSACTION_KEY,
+		AbstractGateway::TXN_TYPE_CREATE_MANIFEST,
+	);
+
 	/**
 	 * Card data
 	 *
@@ -64,10 +70,15 @@ class SdkClient implements ClientInterface {
 	public function execute() {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
+
+		if ( ! ( $builder instanceof TransactionBuilder ) ) {
+			return $builder->{$this->get_arg( RequestArg::TXN_TYPE )}();
+		}
+
 		$this->prepare_builder( $builder );
 		$response = $builder->execute();
 
-		if ( $response->token ) {
+		if ( $response instanceof Transaction && $response->token ) {
 			$this->card_data->token = $response->token;
 			$this->card_data->updateTokenExpiry();
 		}
@@ -90,13 +101,17 @@ class SdkClient implements ClientInterface {
 	/**
 	 * Gets required builder for the transaction
 	 *
-	 * @return TransactionBuilder
+	 * @return TransactionBuilder|IPaymentGateway
 	 */
 	protected function get_transaction_builder() {
+		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
+			return ServicesContainer::instance()->getClient();
+		}
+
 		$subject =
-			in_array( $this->args[ RequestArg::TXN_TYPE ], $this->auth_transactions, true )
+			in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->auth_transactions, true )
 			? $this->card_data : $this->previous_transaction;
-		return $subject->{$this->args[ RequestArg::TXN_TYPE ]}();
+		return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
 	}
 
 	protected function prepare_request_objects() {
@@ -116,6 +131,10 @@ class SdkClient implements ClientInterface {
 			 */
 			$token = $this->get_arg( RequestArg::CARD_DATA );
 			$this->prepare_card_data( $token );
+
+			if ( null !== $token && $this->has_arg( RequestArg::CARD_HOLDER_NAME ) ) {
+				$this->card_data->cardHolderName = $this->get_arg( RequestArg::CARD_HOLDER_NAME );
+			}
 
 			if ( null !== $token && $token->get_meta( PaymentTokenData::KEY_SHOULD_SAVE_TOKEN, true ) ) {
 				$this->builder_args['requestMultiUseToken'] = array( true );
@@ -145,10 +164,9 @@ class SdkClient implements ClientInterface {
 	protected function prepare_address( $address_type, array $data ) {
 		$address       = new Address();
 		$address->type = $address_type;
+		$address       = $this->set_object_data( $address, $data );
 
-		$name = strtolower( $address_type ) . 'Address';
-
-		$this->builder_args[ $name ] = array( $address, $address_type );
+		$this->builder_args['address'] = array( $address, $address_type );
 	}
 
 	protected function has_arg( $arg_type ) {
@@ -160,14 +178,19 @@ class SdkClient implements ClientInterface {
 	}
 
 	protected function configure_sdk() {
-		$config = new ServicesConfig();
+		$config = $this->set_object_data(
+			new ServicesConfig(),
+			$this->args[ RequestArg::SERVICES_CONFIG ]
+		);
+		ServicesContainer::configure( $config );
+	}
 
-		foreach ( $this->args[ RequestArg::SERVICES_CONFIG ] as $name => $value ) {
-			if ( property_exists( $config, $name ) ) {
-				$config->{$name} = $value;
+	protected function set_object_data( $obj, array $data ) {
+		foreach ( $data as $key => $value ) {
+			if ( property_exists( $obj, $key ) ) {
+				$obj->{$key} = $value;
 			}
 		}
-
-		ServicesContainer::configure( $config );
+		return $obj;
 	}
 }

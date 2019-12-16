@@ -4,6 +4,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 defined( 'ABSPATH' ) || exit;
 
+use Exception;
 use WC_Payment_Gateway_CC;
 use WC_Order;
 use GlobalPayments\Api\Entities\Transaction;
@@ -14,9 +15,26 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
  * Shared gateway method implementations
  */
 abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
+	// auth requests
 	const TXN_TYPE_AUTHORIZE = 'authorize';
 	const TXN_TYPE_SALE      = 'charge';
 	const TXN_TYPE_VERIFY    = 'verify';
+
+	// mgmt requests
+	const TXN_TYPE_REFUND  = 'refund';
+	const TXN_TYPE_VOID    = 'void';
+	const TXN_TYPE_CAPTURE = 'capture';
+
+	// transit requests
+	const TXN_TYPE_CREATE_TRANSACTION_KEY = 'getTransactionKey';
+	const TXN_TYPE_CREATE_MANIFEST        = 'createManifest';
+
+	/**
+	 * Gateway provider. Should be overriden by individual gateway implementations
+	 *
+	 * @var string
+	 */
+	public $gateway_provider;
 
 	/**
 	 * Payment method enabled status
@@ -124,6 +142,27 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return array
 	 */
 	abstract public function get_gateway_form_fields();
+
+	/**
+	 * Email address of the first-line support team
+	 *
+	 * @return string
+	 */
+	abstract public function get_first_line_support_email();
+
+	/**
+	 * Get the current gateway provider
+	 *
+	 * @return string
+	 */
+	public function get_gateway_provider() {
+		if ( ! $this->gateway_provider ) {
+			// this shouldn't happen outside of our internal development
+			throw new Exception( 'Missing gateway provider configuration' );
+		}
+
+		return $this->gateway_provider;
+	}
 
 	/**
 	 * Sets the configurable merchant settings for use elsewhere in the class
@@ -262,7 +301,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 					'title'       => __( 'Allow Card Saving', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'label'       => __( 'Allow Card Saving', 'globalpayments-gateway-provider-for-woocommerce' ),
 					'type'        => 'checkbox',
-					'description' => 'Note: to use the card saving feature, you must have multi-use tokenization enabled on your Heartland account.',
+					'description' => sprintf(
+						/* translators: %s: Email address of support team */
+						__( 'Note: to use the card saving feature, you must have multi-use token support enabled on your account. Please contact <a href="mailto:%s?Subject=WooCommerce%%20Transaction%%20Descriptor%%20Option">support</a> with any questions regarding this option.', 'globalpayments-gateway-provider-for-woocommerce' ),
+						$this->get_first_line_support_email()
+					),
 					'default'     => 'no',
 				),
 				'txn_descriptor'    => array(
@@ -270,8 +313,8 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 					'type'              => 'text',
 					'description'       => sprintf(
 						/* translators: %s: Email address of support team */
-						__( 'During a Capture or Authorize payment action, this value will be passed along as the TxnDescriptor. Please contact <a href="mailto:%s?Subject=WooCommerce%%20TxnDescriptor Option">support</a> with any question regarding this option.', 'globalpayments-gateway-provider-for-woocommerce' ),
-						'securesubmitcert@e-hps.com'
+						__( 'During a Capture or Authorize payment action, this value will be passed along as the transaction-specific descriptor listed on the customer\'s bank account. Please contact <a href="mailto:%s?Subject=WooCommerce%%20Transaction%%20Descriptor%%20Option">support</a> with any questions regarding this option.', 'globalpayments-gateway-provider-for-woocommerce' ),
+						$this->get_first_line_support_email()
 					),
 					'default'           => '',
 					'class'             => 'txn_descriptor',
@@ -416,9 +459,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	protected function prepare_request( $txn_type, WC_Order $order = null ) {
 		$map = array(
-			self::TXN_TYPE_AUTHORIZE => Requests\AuthorizationRequest::class,
-			self::TXN_TYPE_SALE      => Requests\SaleRequest::class,
-			self::TXN_TYPE_VERIFY    => Requests\VerifyRequest::class,
+			self::TXN_TYPE_AUTHORIZE              => Requests\AuthorizationRequest::class,
+			self::TXN_TYPE_SALE                   => Requests\SaleRequest::class,
+			self::TXN_TYPE_VERIFY                 => Requests\VerifyRequest::class,
+			self::TXN_TYPE_CREATE_TRANSACTION_KEY => Requests\CreateTransactionKeyRequest::class,
+			self::TXN_TYPE_CREATE_MANIFEST        => Requests\CreateManifestRequest::class,
 		);
 
 		if ( ! isset( $map[ $txn_type ] ) ) {
@@ -426,7 +471,11 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		}
 
 		$request = $map[ $txn_type ];
-		return new $request( $this->id, $order, $this->get_backend_gateway_options() );
+		return new $request(
+			$this->id,
+			$order,
+			array_merge( array( 'gatewayProvider' => $this->get_gateway_provider() ), $this->get_backend_gateway_options() )
+		);
 	}
 
 	/**

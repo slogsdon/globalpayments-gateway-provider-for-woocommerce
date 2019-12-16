@@ -2,9 +2,13 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
+use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+
 defined( 'ABSPATH' ) || exit;
 
 class HeartlandGateway extends AbstractGateway {
+	public $gateway_provider = GatewayProvider::PORTICO;
+
 	/**
 	 * Merchant location public API key
 	 *
@@ -27,6 +31,10 @@ class HeartlandGateway extends AbstractGateway {
 		$this->id                 = 'globalpayments_heartland';
 		$this->method_title       = __( 'Heartland', 'globalpayments-gateway-provider-for-woocommerce' );
 		$this->method_description = __( 'Connect to the Heartland Portico gateway', 'globalpayments-gateway-provider-for-woocommerce' );
+	}
+
+	public function get_first_line_support_email() {
+		return 'securesubmitcert@e-hps.com';
 	}
 
 	public function get_gateway_form_fields() {

@@ -42,6 +42,7 @@ class Plugin {
 		$gateways = array(
 			Gateways\HeartlandGateway::class,
 			Gateways\GeniusGateway::class,
+			Gateways\TransitGateway::class,
 		);
 
 		foreach ( $gateways as $gateway ) {

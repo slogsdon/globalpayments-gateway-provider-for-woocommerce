@@ -13,4 +13,11 @@ interface HandlerInterface {
 	 * @param Transaction $response
 	 */
 	public function __construct( RequestInterface $request, Transaction $response );
+
+	/**
+	 * Handles the response
+	 *
+	 * @return
+	 */
+	public function handle();
 }

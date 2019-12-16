@@ -52,8 +52,16 @@ abstract class AbstractRequest implements RequestInterface {
 
 	public function get_default_args() {
 		return array(
-			RequestArg::SERVICES_CONFIG => $this->config,
-			RequestArg::TXN_TYPE        => $this->get_transaction_type(),
+			RequestArg::SERVICES_CONFIG  => $this->config,
+			RequestArg::TXN_TYPE         => $this->get_transaction_type(),
+			RequestArg::BILLING_ADDRESS  => null !== $this->order ? array(
+				'streetAddress1' => $this->order->get_billing_address_1(),
+				'city'           => $this->order->get_billing_city(),
+				'state'          => $this->order->get_billing_state(),
+				'postalCode'     => $this->order->get_billing_postcode(),
+				'country'        => $this->order->get_billing_country(),
+			) : null,
+			RequestArg::CARD_HOLDER_NAME => null !== $this->order ? $this->order->get_formatted_billing_full_name() : null,
 		);
 	}
 
