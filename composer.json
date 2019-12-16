@@ -27,8 +27,8 @@
     "scripts": {
         "fix": [ "phpcbf" ],
         "test": [
-            "phpcs .",
-            "phpunit"
+            "phpcs",
+            "WP_TESTS_DIR='./tests/fixtures/wordpress-tests-lib' phpunit"
         ]
     },
     "scripts-descriptions": {

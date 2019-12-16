@@ -1,4 +1,5 @@
 .idea/
+/tests/fixtures/wordpress-tests-lib/
 /wp-content/
 /vendor/
 .phpunit.result.cache
