@@ -1,0 +1,70 @@
+button / field style matching options:
+
+1) pull current styles off another/default field
+2) textarea in admin for style overrides
+3) filter/module overload for styles
+4) individual options for style overrides
+
+tests:
+
+each scenario below should be tested across all supported gateways
+
+checkout
+  new card with no allow card saving
+    authorize
+    sale
+    verify
+  new card with allow card saving and no save to account
+    authorize
+    sale
+    verify
+  new card with allow card saving and save to account (store multi-use token)
+    authorize
+    sale
+    verify
+  new card with allow card saving and save to account (store multi-use token) + overwrite previously stored card
+    authorize
+    sale
+    verify
+  stored card
+    authorize
+    sale
+    verify
+
+order pay
+  new card with no allow card saving
+    authorize
+    sale
+    verify
+  new card with allow card saving and no save to account
+    authorize
+    sale
+    verify
+  new card with allow card saving and save to account (store multi-use token)
+    authorize
+    sale
+    verify
+  new card with allow card saving and save to account (store multi-use token) + overwrite previously stored card
+    authorize
+    sale
+    verify
+  stored card
+    authorize
+    sale
+    verify
+
+add payment method
+  new card (store multi-use token)
+    authorize
+    sale
+    verify
+  new card (store multi-use token) + overwrite previously stored card
+    authorize
+    sale
+    verify
+
+admin
+  void
+  capture auth
+  capture verify
+  refund / reverse

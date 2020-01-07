@@ -3,6 +3,7 @@
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -64,5 +65,10 @@ class HeartlandGateway extends AbstractGateway {
 		return array(
 			'secretApiKey' => $this->secret_key,
 		);
+	}
+
+	protected function is_transaction_active( TransactionSummary $details ) {
+		// @phpcs:ignore WordPress.NamingConventions.ValidVariableName
+		return 'A' === $details->transactionStatus;
 	}
 }
