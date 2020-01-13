@@ -1,5 +1,5 @@
 === Global Payments Gateway Provider for WooCommerce ===
-Contributors: markhagan
+Contributors: markhagan, Mark Smedal Jr
 Tags: woocommerce, woo, commerce, global, payments, heartland, payment, systems, tsys, genius,gateway, token, tokenize, save cards
 Tested up to: 5.2
 Stable tag: trunk
