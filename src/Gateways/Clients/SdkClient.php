@@ -15,6 +15,8 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestArg;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestInterface;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\TransactionDetailRequest;
+
 use WC_Payment_Token_CC;
 
 defined( 'ABSPATH' ) || exit;
@@ -111,6 +113,10 @@ class SdkClient implements ClientInterface {
 	protected function get_transaction_builder() {
 		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
 			return ServicesContainer::instance()->getClient();
+		}
+
+		if ( $this->get_arg( RequestArg::TXN_TYPE ) === "transactionDetail") {
+			return ReportingService::transactionDetail( $this->get_arg( 'GATEWAY_ID' ) );
 		}
 
 		$subject =
