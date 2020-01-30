@@ -8,6 +8,7 @@ use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
+use GlobalPayments\Api\Services\ReportingService;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
@@ -70,6 +71,10 @@ class SdkClient implements ClientInterface {
 	public function execute() {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
+
+		if ( $this->args['TXN_TYPE'] === "transactionDetail") {
+			return $builder->execute();
+		}
 
 		if ( ! ( $builder instanceof TransactionBuilder ) ) {
 			return $builder->{$this->get_arg( RequestArg::TXN_TYPE )}();
