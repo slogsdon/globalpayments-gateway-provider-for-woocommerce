@@ -12,4 +12,6 @@ abstract class RequestArg {
 	const SHIPPING_ADDRESS = 'SHIPPING_ADDRESS';
 	const TXN_TYPE         = 'TXN_TYPE';
 	const GATEWAY_ID	   = 'GATEWAY_ID';
+	const DESCRIPTION	   = 'DESCRIPTION';
+	const AUTH_AMOUNT	   = 'AUTH_AMOUNT';	
 }
