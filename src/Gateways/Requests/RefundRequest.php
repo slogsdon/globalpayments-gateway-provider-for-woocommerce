@@ -13,7 +13,7 @@ class RefundRequest extends AbstractRequest {
 	}	
 
 	public function get_args() {
-		$gateway_id = $this->order->data['transaction_id'];
+		$gateway_id = $this->order->get_transaction_id();
 		$description = $this->data['refund_reason'];
 		$refund_amount = $this->data['refund_amount'];
 
