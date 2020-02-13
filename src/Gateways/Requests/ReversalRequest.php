@@ -13,7 +13,7 @@ class ReversalRequest extends AbstractRequest {
 
 	public function get_args() {
 
-		$gatewayID = $this->order->data['transaction_id'];
+		$gateway_id  = $this->order->get_transaction_id();
 		$description = $this->data['refund_reason'];
 
 		$original_amount = wc_format_decimal( $this->order->get_total(), 2 );
@@ -23,7 +23,7 @@ class ReversalRequest extends AbstractRequest {
 		return array(
 			RequestArg::AMOUNT      => null !== $this->order ? $this->order->get_total() : null,
 			RequestArg::AUTH_AMOUNT => $new_amount,
-			RequestArg::GATEWAY_ID  => $gatewayID,
+			RequestArg::GATEWAY_ID  => $gateway_id,
 			RequestArg::DESCRIPTION => $description,
 		);
 	}
