@@ -79,7 +79,7 @@ class SdkClient implements ClientInterface {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
 
-		if ( $this->args['TXN_TYPE'] === "transactionDetail") {
+		if ( "transactionDetail" === $this->args['TXN_TYPE'] ) {
 			return $builder->execute();
 		}
 
