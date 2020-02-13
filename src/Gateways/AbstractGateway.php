@@ -32,7 +32,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	const TXN_TYPE_CREATE_MANIFEST        = 'createManifest';
 
 	// report requests
-	const TXN_TYPE_REPORT_TXN_DETAILS = 'transactionDetails';
+	const TXN_TYPE_REPORT_TXN_DETAILS = 'transactionDetail';
 
 	/**
 	 * Gateway provider. Should be overriden by individual gateway implementations
