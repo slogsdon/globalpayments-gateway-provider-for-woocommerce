@@ -12,12 +12,12 @@ class TransactionDetailRequest extends AbstractRequest {
 	}
 
 	public function get_args() {
-        $gateway_id = $this->order->get_transaction_id();
+		$gateway_id = $this->order->get_transaction_id();
 
 		return array(
-			RequestArg::AMOUNT      => null !== $this->order ? $this->order->get_total() : null,
-			RequestArg::CURRENCY    => null !== $this->order ? $this->order->get_currency() : null,
-			RequestArg::GATEWAY_ID  => $gateway_id
+			RequestArg::AMOUNT     => null !== $this->order ? $this->order->get_total() : null,
+			RequestArg::CURRENCY   => null !== $this->order ? $this->order->get_currency() : null,
+			RequestArg::GATEWAY_ID => $gateway_id,
 		);
 	}
 }

@@ -79,7 +79,7 @@ class SdkClient implements ClientInterface {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
 
-		if ( "transactionDetail" === $this->args['TXN_TYPE'] ) {
+		if ( 'transactionDetail' === $this->args['TXN_TYPE'] ) {
 			return $builder->execute();
 		}
 
@@ -120,7 +120,7 @@ class SdkClient implements ClientInterface {
 			return ServicesContainer::instance()->getClient();
 		}
 
-		if ( $this->get_arg( RequestArg::TXN_TYPE ) === "transactionDetail") {
+		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'transactionDetail' ) {
 			return ReportingService::transactionDetail( $this->get_arg( 'GATEWAY_ID' ) );
 		}
 
@@ -171,11 +171,11 @@ class SdkClient implements ClientInterface {
 		}
 
 		if ( $this->has_arg( RequestArg::DESCRIPTION ) ) {
-			$this->builder_args['description'] = array($this->get_arg( RequestArg::DESCRIPTION ) );
+			$this->builder_args['description'] = array( $this->get_arg( RequestArg::DESCRIPTION ) );
 		}
 
 		if ( $this->has_arg( RequestArg::AUTH_AMOUNT ) ) {
-			$this->builder_args['authAmount'] = array($this->get_arg( RequestArg::AUTH_AMOUNT ) );
+			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
 	}
 
