@@ -544,7 +544,16 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
-		if ( '00' !== $response->responseCode ) {
+		if ( '00' !== $response->responseCode ) {			
+			global $woocommerce;
+			$decline_message = $this->decline_message[$response->responseCode];			
+
+			if (function_exists('wc_add_notice')) {
+				wc_add_notice($decline_message, 'error');
+			} else if (isset($woocommerce) && property_exists($woocommerce, 'add_error')) {
+				$woocommerce->add_error($decline_message);
+			}
+
 			return false;
 		}
 
@@ -571,4 +580,64 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	protected function is_transaction_active( TransactionSummary $details ) {
 		return false;
 	}
+
+	/**
+	 * string Key = gateway response codes for declined transaction attempts; 
+	 * string Value = customer-facing messages for each decline code
+	 */
+	public	$decline_message = array(
+			'02' => "The card was declined.",
+			'03' => "The card was declined.",
+			'04' => "The card was declined.",
+			'05' => "The card was declined.",
+			'41' => "The card was declined.",
+			'43' => "The card was declined.",
+			'44' => "The card was declined.",
+			'51' => "The card was declined.",
+			'56' => "The card was declined.",
+			'61' => "The card was declined.",
+			'62' => "The card was declined.",
+			'63' => "The card was declined.",
+			'65' => "The card was declined.",
+			'78' => "The card was declined.",
+			'06' => "An error occurred while processing the card.",
+			'07' => "An error occurred while processing the card.",
+			'12' => "An error occurred while processing the card.",
+			'15' => "An error occurred while processing the card.",
+			'19' => "An error occurred while processing the card.",
+			'52' => "An error occurred while processing the card.",
+			'53' => "An error occurred while processing the card.",
+			'57' => "An error occurred while processing the card.",
+			'58' => "An error occurred while processing the card.",
+			'76' => "An error occurred while processing the card.",
+			'77' => "An error occurred while processing the card.",
+			'96' => "An error occurred while processing the card.",
+			'EC' => "An error occurred while processing the card.",
+			'13' => "Must be greater than or equal 0.",
+			'14' => "The card number is incorrect.",
+			'54' => "The card has expired.",
+			'55' => "The pin is invalid.",
+			'75' => "Maximum number of pin retries exceeded.",
+			'80' => "Card expiration date is invalid.",
+			'86' => "Can't verify card pin number.",
+			'91' => "The card issuer timed-out.",
+			'EB' => "The card's security code is incorrect.",
+			'N7' => "The card's security code is incorrect.",
+			'FR' => "Possible fraud detected",	
+			// gift card declines
+			'1'  => "An unknown gift error has occurred.",
+			'2'  => "An unknown gift error has occurred.",
+			'11' => "An unknown gift error has occurred.",
+			'3'  => "The card data is invalid.",
+			'8'  => "The card data is invalid.",
+			'4'  => "The card has expired.",
+			'5'  => "The card was declined.",
+			'12' => "The card was declined.",
+			'6'  => "An error occurred while processing the card.",
+			'7'  => "An error occurred while processing the card.",
+			'10' => "An error occurred while processing the card.",
+			'9'  => "Must be greater than or equal 0.",
+			'13' => "The amount was partially approved.",
+			'14' => "The pin is invalid.",
+		);
 }
