@@ -8,12 +8,14 @@ use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
+use GlobalPayments\Api\Services\ReportingService;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestArg;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\RequestInterface;
+
 use WC_Payment_Token_CC;
 
 defined( 'ABSPATH' ) || exit;
@@ -44,6 +46,12 @@ class SdkClient implements ClientInterface {
 		AbstractGateway::TXN_TYPE_CREATE_MANIFEST,
 	);
 
+	protected $refund_transactions = array(
+		AbstractGateway::TXN_TYPE_REFUND,
+		AbstractGateway::TXN_TYPE_REVERSAL,
+		AbstractGateway::TXN_TYPE_VOID,
+	);
+
 	/**
 	 * Card data
 	 *
@@ -70,6 +78,10 @@ class SdkClient implements ClientInterface {
 	public function execute() {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
+
+		if ( 'transactionDetail' === $this->args['TXN_TYPE'] ) {
+			return $builder->execute();
+		}
 
 		if ( ! ( $builder instanceof TransactionBuilder ) ) {
 			return $builder->{$this->get_arg( RequestArg::TXN_TYPE )}();
@@ -106,6 +118,15 @@ class SdkClient implements ClientInterface {
 	protected function get_transaction_builder() {
 		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
 			return ServicesContainer::instance()->getClient();
+		}
+
+		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'transactionDetail' ) {
+			return ReportingService::transactionDetail( $this->get_arg( 'GATEWAY_ID' ) );
+		}
+
+		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->refund_transactions, true ) ) {
+			$subject = Transaction::fromId( $this->get_arg( 'GATEWAY_ID' ) );
+			return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
 		}
 
 		$subject =
@@ -147,6 +168,14 @@ class SdkClient implements ClientInterface {
 
 		if ( $this->has_arg( RequestArg::SHIPPING_ADDRESS ) ) {
 			$this->prepare_address( AddressType::SHIPPING, $this->get_arg( RequestArg::SHIPPING_ADDRESS ) );
+		}
+
+		if ( $this->has_arg( RequestArg::DESCRIPTION ) ) {
+			$this->builder_args['description'] = array( $this->get_arg( RequestArg::DESCRIPTION ) );
+		}
+
+		if ( $this->has_arg( RequestArg::AUTH_AMOUNT ) ) {
+			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
 	}
 

@@ -5,6 +5,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 defined( 'ABSPATH' ) || exit;
 
 use Exception;
+use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 use WC_Payment_Gateway_CC;
 use WC_Order;
 use GlobalPayments\Api\Entities\Transaction;
@@ -21,13 +22,17 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	const TXN_TYPE_VERIFY    = 'verify';
 
 	// mgmt requests
-	const TXN_TYPE_REFUND  = 'refund';
-	const TXN_TYPE_VOID    = 'void';
-	const TXN_TYPE_CAPTURE = 'capture';
+	const TXN_TYPE_REFUND   = 'refund';
+	const TXN_TYPE_REVERSAL = 'reverse';
+	const TXN_TYPE_VOID     = 'void';
+	const TXN_TYPE_CAPTURE  = 'capture';
 
 	// transit requests
 	const TXN_TYPE_CREATE_TRANSACTION_KEY = 'getTransactionKey';
 	const TXN_TYPE_CREATE_MANIFEST        = 'createManifest';
+
+	// report requests
+	const TXN_TYPE_REPORT_TXN_DETAILS = 'transactionDetail';
 
 	/**
 	 * Gateway provider. Should be overriden by individual gateway implementations
@@ -88,6 +93,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	protected $client;
 
 	public function __construct() {
+		$this->client     = new Clients\SdkClient();
 		$this->has_fields = true;
 		$this->supports   = array(
 			'products',
@@ -105,7 +111,6 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			'subscription_payment_method_change_admin',
 			'multiple_subscriptions',
 		);
-		$this->client     = new Clients\SdkClient();
 
 		$this->configure_method_settings();
 		$this->init_form_fields();
@@ -450,6 +455,43 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	}
 
 	/**
+	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order
+	 *
+	 * @param int $order_id
+	 * @param null|number $amount
+	 * @param string $reason
+	 *
+	 * @return array
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		$details                = $this->get_transaction_details( $order_id );
+		$is_order_txn_id_active = $this->is_transaction_active( $details );
+		$txn_type               = $is_order_txn_id_active ? self::TXN_TYPE_REVERSAL : self::TXN_TYPE_REFUND;
+
+		$order         = new WC_Order( $order_id );
+		$request       = $this->prepare_request( $txn_type, $order );
+		$response      = $this->submit_request( $request );
+		$is_successful = $this->handle_response( $request, $response );
+
+		return $is_successful;
+	}
+
+	/**
+	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order
+	 *
+	 * @param int $order_id
+	 *
+	 * @return TransactionSummary
+	 */
+	public function get_transaction_details( $order_id ) {
+		$order    = new WC_Order( $order_id );
+		$request  = $this->prepare_request( self::TXN_TYPE_REPORT_TXN_DETAILS, $order );
+		$response = $this->submit_request( $request );
+
+		return $response;
+	}
+
+	/**
 	 * Creates the necessary request based on the transaction type
 	 *
 	 * @param WC_Order $order
@@ -464,6 +506,9 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			self::TXN_TYPE_VERIFY                 => Requests\VerifyRequest::class,
 			self::TXN_TYPE_CREATE_TRANSACTION_KEY => Requests\CreateTransactionKeyRequest::class,
 			self::TXN_TYPE_CREATE_MANIFEST        => Requests\CreateManifestRequest::class,
+			self::TXN_TYPE_REFUND                 => Requests\RefundRequest::class,
+			self::TXN_TYPE_REVERSAL               => Requests\ReversalRequest::class,
+			self::TXN_TYPE_REPORT_TXN_DETAILS     => Requests\TransactionDetailRequest::class,
 		);
 
 		if ( ! isset( $map[ $txn_type ] ) ) {
@@ -520,5 +565,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		}
 
 		return true;
+	}
+
+	// should be overridden by gateway implementations
+	protected function is_transaction_active( TransactionSummary $details ) {
+		return false;
 	}
 }
