@@ -544,7 +544,16 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 */
 	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
-		if ( '00' !== $response->responseCode ) {
+		if ( '00' !== $response->responseCode ) {			
+			$woocommerce = WC();
+			$decline_message = $this->get_decline_message($response->responseCode);			
+
+			if (function_exists('wc_add_notice')) {
+				wc_add_notice($decline_message, 'error');
+			} else if (isset($woocommerce) && property_exists($woocommerce, 'add_error')) {
+				$woocommerce->add_error($decline_message);
+			}
+
 			return false;
 		}
 
@@ -570,5 +579,23 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	// should be overridden by gateway implementations
 	protected function is_transaction_active( TransactionSummary $details ) {
 		return false;
+	}
+
+	/**
+	 * Should be overridden by each gateway implementation 
+	 *
+	 * @return string
+	 */
+	public function get_decline_message() {
+		return 'An error occurred while processing the gift card.';
+	}
+
+	/**
+	 * Should be overridden by each gateway implementation
+	 *
+	 * @return string
+	 */
+	public function get_gift_decline_message() {
+		return 'An error occurred while processing the gift card.';
 	}
 }
