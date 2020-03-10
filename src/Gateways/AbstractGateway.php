@@ -586,7 +586,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 *
 	 * @return string
 	 */
-	public function get_decline_message() {
+	public function get_decline_message( string $response_code ) {
 		return 'An error occurred while processing the gift card.';
 	}
 
@@ -595,7 +595,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 *
 	 * @return string
 	 */
-	public function get_gift_decline_message() {
+	public function get_gift_decline_message( string $response_code ) {
 		return 'An error occurred while processing the gift card.';
 	}
 }
