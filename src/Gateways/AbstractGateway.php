@@ -580,4 +580,22 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	protected function is_transaction_active( TransactionSummary $details ) {
 		return false;
 	}
+
+	/**
+	 * Should be overridden by each gateway implementation 
+	 *
+	 * @return string
+	 */
+	public function get_decline_message() {
+		return 'An error occurred while processing the gift card.';
+	}
+
+	/**
+	 * Should be overridden by each gateway implementation
+	 *
+	 * @return string
+	 */
+	public function get_gift_decline_message() {
+		return 'An error occurred while processing the gift card.';
+	}
 }
