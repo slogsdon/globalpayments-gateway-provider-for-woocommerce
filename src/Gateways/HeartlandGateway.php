@@ -28,6 +28,13 @@ class HeartlandGateway extends AbstractGateway {
 	 */
 	public $secret_key;
 
+	/**
+	 * Allows payment via Heartland Marketing Solutions (gift cards)
+	 *
+	 * @var bool
+	 */
+	public $allow_gift_cards;
+
 	public function configure_method_settings() {
 		$this->id                 = 'globalpayments_heartland';
 		$this->method_title       = __( 'Heartland', 'globalpayments-gateway-provider-for-woocommerce' );
@@ -51,6 +58,15 @@ class HeartlandGateway extends AbstractGateway {
 				'type'        => 'text',
 				'description' => __( 'Get your API keys from your Heartland Online Payments account.', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'default'     => '',
+			),			
+			'allow_gift_cards' => array(
+				'title'				=> __( 'Enable Gift Cards', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'label'				=> __( 'Allow customers to use gift cards to pay for purchases in full or in part.', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'type'				=> 'checkbox',
+				'description'		=> sprintf(
+					__( 'This will display a gift card entry field directly below the credit card entry area.' )
+				),
+				'default'			=> 'no'
 			),
 		);
 	}
@@ -170,6 +186,22 @@ class HeartlandGateway extends AbstractGateway {
 				return 'The pin is invalid';			
 			default:
 				return 'An error occurred while processing the gift card.';
+		}
+	}
+
+	/**
+	 * Adds Heartland gift card fields 
+	 */
+	public function payment_fields() {
+		parent::payment_fields();
+
+		if ( $this->allow_gift_cards === true ) {
+			include_once 'wp-content\plugins\globalpayments-gateway-provider-for-woocommerce\src\Gateways\HMS-fields.php';
+
+			// wp_enqueue_script('test', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/js/test.js', array('jquery'), false, true);
+
+			// SecureSubmit custom CSS
+			wp_enqueue_style('heartland-gift-cards', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/css/heartland-gift-cards.css');
 		}
 	}
 }

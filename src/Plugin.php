@@ -18,6 +18,10 @@ class Plugin {
 	 */
 	const VERSION = '1.0.0';
 
+	public static function do_a_barrell_roll() {
+		echo "please get here"; // it gets here now		
+	}
+
 	/**
 	 * Init the package.
 	 */
@@ -27,6 +31,9 @@ class Plugin {
 		if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
 			return;
 		}
+
+		add_action('wp_ajax_nopriv_use_gift_card', array(self::class, 'do_a_barrell_roll')); // dice?
+		add_action('wp_ajax_use_gift_card', array(self::class, 'do_a_barrell_roll')); // dice?
 
 		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
 	}
