@@ -1,6 +1,6 @@
 <?php
 
-include_once 'wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/src/Gateways/class-wc-gateway-securesubmit-giftcards.php';
+// include_once 'wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/src/Gateways/class-wc-gateway-securesubmit-giftcards.php';
 
 if (true) : // Allow customers to pay with Heartland gift cards ?>
     <fieldset>
@@ -62,12 +62,40 @@ if (true) : // Allow customers to pay with Heartland gift cards ?>
             //       });
             // httpRequest.send('action=use_gift_card&gift_card_number=5022440000000000098&gift_card_pin=1234');
             httpRequest.send(post_string);
+            jQuery('body').trigger('update_checkout');
+            alert(httpRequest.response);
 
-            httpRequest.onreadystatechange = function(){
-            console.log('oh shit son I got a response back');
-            };
+            // httpRequest.response = function(){
+            //       alert('maybe')
+            // };
 
       };
+
+      jQuery(document).on( 'click', '.securesubmit-remove-gift-card', function (event) {
+            event.preventDefault();
+
+            var removedCardID = jQuery(this).attr('id');
+
+            jQuery.ajax({
+            url: ajaxurl,
+            type: "POST",
+            data: {
+                  action: 'remove_gift_card',
+                  securesubmit_card_id: removedCardID
+            }
+            }).done(function () {
+
+                  jQuery('body').trigger('update_checkout');
+                  jQuery(".button[name='update_cart']")
+                        .prop("disabled", false)
+                        .trigger("click");
+
+            });
+      });
+
+      function processGiftCardResponse () {
+
+      }
 
 </script>
                 </div>

@@ -4,6 +4,8 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
+use WC_Order;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -154,42 +156,6 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	/**
-	 * returns gift-specific decline message for display to customer
-	 * 
-	 * @param string $response_code
-	 *
-	 * @return string
-	 */
-	public function get_gift_decline_message( string $response_code ) {
-		switch ($response_code) {
-			case '1':
-			case '2':
-			case '11':
-				return 'An unknown gift error has occurred.';
-			case '3':
-			case '8':
-				return 'The card data is invalid.';
-			case '4':
-				return 'The card has expired.';
-			case '5':
-			case '12':
-				return 'The card was declined.';
-			case '6':
-			case '7':
-			case '10':
-				return 'An error occurred while processing this card.';
-			case '9':
-				return 'Must be greater than or equal 0.';
-			case '13':
-				return 'The amount was partially approved.';
-			case '14':
-				return 'The pin is invalid';			
-			default:
-				return 'An error occurred while processing the gift card.';
-		}
-	}
-
-	/**
 	 * Adds Heartland gift card fields 
 	 */
 	public function payment_fields() {
@@ -203,5 +169,31 @@ class HeartlandGateway extends AbstractGateway {
 			// SecureSubmit custom CSS
 			wp_enqueue_style('heartland-gift-cards', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/css/heartland-gift-cards.css');
 		}
+	}
+
+	/**
+	 * Handle payment functions /-/override parent to add gift card functionality
+	 *
+	 * @param int $order_id
+	 *
+	 * @return array
+	 * 
+	 */
+	public function process_payment( $order_id ) {
+		$order         = new WC_Order( $order_id );
+		$request       = $this->prepare_request( $this->payment_action, $order );
+		$response      = $this->submit_request( $request );
+		$is_successful = $this->handle_response( $request, $response );
+
+		$session_applied_gift_card = WC()->session->get('securesubmit_gift_card_applied');
+		if (!empty($session_applied_gift_card)) {
+			$gift_card_order_placement = new gcOrder();
+			$gift_card_order_placement->processGiftCardPayment($order_id);
+		}
+
+		return array(
+			'result'   => $is_successful ? 'success' : 'failure',
+			'redirect' => $is_successful ? $this->get_return_url( $order ) : false,
+		);
 	}
 }

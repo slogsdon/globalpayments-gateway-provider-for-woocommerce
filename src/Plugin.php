@@ -7,6 +7,12 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider;
 
 defined( 'ABSPATH' ) || exit;
 
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\aGiftCard;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gc;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGateway; // part of the uglyness
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGatewayGift;
+
 /**
  * Main plugin class.
  */
@@ -18,10 +24,6 @@ class Plugin {
 	 */
 	const VERSION = '1.0.0';
 
-	public static function do_a_barrell_roll() {
-		echo "please get here"; // it gets here now		
-	}
-
 	/**
 	 * Init the package.
 	 */
@@ -32,8 +34,20 @@ class Plugin {
 			return;
 		}
 
-		add_action('wp_ajax_nopriv_use_gift_card', array(self::class, 'do_a_barrell_roll')); // dice?
-		add_action('wp_ajax_use_gift_card', array(self::class, 'do_a_barrell_roll')); // dice?
+		// probably want something cleaner than this, but for now:
+		$heartland_gateway = new HeartlandGatewayGift();
+		$gcthing = new gcOrder();
+		add_action('wp_ajax_nopriv_use_gift_card', array($heartland_gateway, 'applyGiftCard')); // dice?
+		add_action('wp_ajax_use_gift_card', array($heartland_gateway, 'applyGiftCard')); // dice?
+		add_action('woocommerce_review_order_before_order_total', array($heartland_gateway, 'addGiftCards'));
+		add_action('woocommerce_cart_totals_before_order_total',  array($heartland_gateway, 'addGiftCards'));
+		add_filter('woocommerce_calculated_total',                array($heartland_gateway, 'updateOrderTotal'), 10, 2);
+		add_action('wp_ajax_nopriv_remove_gift_card',             array($heartland_gateway, 'removeGiftCard'));
+		add_action('wp_ajax_remove_gift_card',                    array($heartland_gateway, 'removeGiftCard'));
+		
+		            // Display gift cards used after checkout and on email
+		add_filter('woocommerce_get_order_item_totals', array( $gcthing, 'addItemsToPostOrderDisplay'), PHP_INT_MAX, 2);
+		add_action('woocommerce_checkout_order_processed', array( $gcthing, 'processGiftCardsZeroTotal'), PHP_INT_MAX, 2);
 
 		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
 	}
