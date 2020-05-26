@@ -162,9 +162,7 @@ class HeartlandGateway extends AbstractGateway {
 		parent::payment_fields();
 
 		if ( $this->allow_gift_cards === true ) {
-			include_once 'wp-content\plugins\globalpayments-gateway-provider-for-woocommerce\src\Gateways\HMS-fields.php';
-
-			// wp_enqueue_script('test', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/js/test.js', array('jquery'), false, true);
+			include_once dirname(plugin_dir_path(__FILE__)) . '/../assets/frontend/HeartlandGiftFields.php';
 
 			// SecureSubmit custom CSS
 			wp_enqueue_style('heartland-gift-cards', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/css/heartland-gift-cards.css');

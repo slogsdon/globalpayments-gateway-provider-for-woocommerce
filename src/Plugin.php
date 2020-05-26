@@ -5,13 +5,10 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider;
 
-defined( 'ABSPATH' ) || exit;
-
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\aGiftCard;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gc;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGateway; // part of the uglyness
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGatewayGift;
+
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Main plugin class.

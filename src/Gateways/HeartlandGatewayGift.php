@@ -2,20 +2,14 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
-use GlobalPayments\Api\Entities\Enums\GatewayProvider;
-use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gc;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
 use stdClass;
 
-
 defined( 'ABSPATH' ) || exit;
 
 class HeartlandGatewayGift extends HeartlandGateway {
-
     protected $temp_balance;
-
     protected $gift_card_pin_submitted;
 
     protected function configureServiceContainer() {
@@ -63,26 +57,8 @@ class HeartlandGatewayGift extends HeartlandGateway {
 		}
 	}
 
-	/**
-	 * Adds Heartland gift card fields 
-	 */
-	public function payment_fields() {
-		parent::payment_fields();
-
-		if ( $this->allow_gift_cards === true ) {
-			include_once 'wp-content\plugins\globalpayments-gateway-provider-for-woocommerce\src\Gateways\HMS-fields.php';
-
-			// wp_enqueue_script('test', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/js/test.js', array('jquery'), false, true);
-
-			// SecureSubmit custom CSS
-			wp_enqueue_style('heartland-gift-cards', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/css/heartland-gift-cards.css');
-		}
-	}
-
 	// do base gift card stuff
 	public function applyGiftCard() {
-        // $this->gift_card_submitted     = $_POST['gift_card_number'];
-		// $this->gift_card_pin_submitted = $_POST['gift_card_pin'];
 		$gift_card_balance = $this->gift_card_balance(
             $_POST['gift_card_number'],
             $_POST['gift_card_pin']
@@ -141,7 +117,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
 	
 	protected function giftCardObject($gift_card_number, $gift_card_pin)
     {
-        $gift_card         = new gc();
+        $gift_card         = new HeartlandGiftCard();
         $gift_card->number = $gift_card_number;
         $gift_card->pin    = $gift_card_pin;
 
@@ -153,7 +129,6 @@ class HeartlandGatewayGift extends HeartlandGateway {
         $this->gift_card->gift_card_name = $this->giftCardName($this->gift_card->number);
         $this->gift_card->gift_card_id   = sanitize_title($this->gift_card->gift_card_name);
         $this->gift_card->temp_balance   = floatval($this->temp_balance);
-        // $this->gift_card->pin            = $this->gift_card_pin;
 
         WC()->session->set('securesubmit_gift_card_object', $this->gift_card);
     }
