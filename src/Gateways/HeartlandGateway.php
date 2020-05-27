@@ -156,7 +156,7 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	/**
-	 * Adds Heartland gift card fields 
+	 * Adds Heartland gift card functionality 
 	 */
 	public function payment_fields() {
 		parent::payment_fields();
@@ -170,7 +170,7 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	/**
-	 * Handle payment functions /-/override parent to add gift card functionality
+	 * Handle payment functions
 	 *
 	 * @param int $order_id
 	 *
@@ -183,10 +183,10 @@ class HeartlandGateway extends AbstractGateway {
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
 
-		$session_applied_gift_card = WC()->session->get('securesubmit_gift_card_applied');
-		if (!empty($session_applied_gift_card)) {
+		// Charge HPS gift cards if CC trans succeeds
+		if ($is_successful && !empty(WC()->session->get('heartland_gift_card_applied'))) {
 			$gift_card_order_placement = new gcOrder();
-			$gift_card_order_placement->processGiftCardPayment($order_id);
+			$gift_card_order_placement->processGiftCardPayment($order_id, $this->secret_key);
 		}
 
 		return array(

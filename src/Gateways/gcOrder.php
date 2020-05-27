@@ -32,7 +32,7 @@ class gcOrder {
 		}
 
 		$securesubmit_data = WC()->session->get( 'securesubmit_data' );
-		$applied_cards     = WC()->session->get( 'securesubmit_gift_card_applied' );
+		$applied_cards     = WC()->session->get( 'heartland_gift_card_applied' );
 
         if ( ! empty( $applied_cards ) ) {
             $rows = $this->buildOrderRows( $rows, $securesubmit_data->original_total, $applied_cards );
@@ -41,11 +41,11 @@ class gcOrder {
         return $rows;
     }
 
-    public static function processGiftCardPayment( $order_id ) {
-        $applied_gift_card      = WC()->session->get( 'securesubmit_gift_card_applied' );
+    public static function processGiftCardPayment( $order_id, $secret_api_key ) {
+        $applied_gift_card      = WC()->session->get( 'heartland_gift_card_applied' );
         $securesubmit_data      = WC()->session->get( 'securesubmit_data' );
         $order_awaiting_payment = $order_id;
-        $giftcard_gateway       = new HeartlandGatewayGift();
+        $giftcard_gateway       = new HeartlandGatewayGift($secret_api_key);
         $gift_card_sales        = array();
 
         foreach ( $applied_gift_card as $gift_card ) {
@@ -113,7 +113,7 @@ class gcOrder {
     }
 
     public function processGiftCardsZeroTotal( $order_id, $posted ) {
-        $appliedCards = WC()->session->get('securesubmit_gift_card_applied');
+        $appliedCards = WC()->session->get('heartland_gift_card_applied');
 
         if ( empty( $posted[ 'payment_method' ] ) ) {
 

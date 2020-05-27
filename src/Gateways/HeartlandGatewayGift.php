@@ -8,15 +8,20 @@ use stdClass;
 
 defined( 'ABSPATH' ) || exit;
 
-class HeartlandGatewayGift extends HeartlandGateway {
+class HeartlandGatewayGift {
+
+    function __construct($secretApiKey) {
+            $this->secretApiKey = $secretApiKey;
+        }
+
     protected $temp_balance;
     protected $gift_card_pin_submitted;
 
     protected function configureServiceContainer() {
         $config = new ServicesConfig();
-        $config->secretApiKey = $this->get_backend_gateway_options()['secretApiKey'];
-        $config->developerId = "123456";
-        $config->versionNumber = "1234";
+        $config->secretApiKey = $this->secretApiKey;
+        // $config->developerId = "123456";
+        // $config->versionNumber = "1234";
 
         ServicesContainer::configure($config);
     }
@@ -107,8 +112,6 @@ class HeartlandGatewayGift extends HeartlandGateway {
             );
         }
 
-        // wc_clear_notices(); // I don't know what this does
-
         return array(
             'error' => false,
             'message' => $response->balanceAmount,
@@ -148,7 +151,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
             $gift_card_object_entered = (object)array();
         }
 
-        $gift_card_object_applied = WC()->session->get('securesubmit_gift_card_applied');
+        $gift_card_object_applied = WC()->session->get('heartland_gift_card_applied');
         if (is_null($gift_card_object_applied)) {
             $gift_card_object_applied = (object)array();
         }
@@ -186,7 +189,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
                 $gift_card_object_entered->used_amount                               = $this->giftCardUsageAmount();
                 $gift_card_object_applied->{$gift_card_object_entered->gift_card_id} = $gift_card_object_entered;
 
-                WC()->session->set('securesubmit_gift_card_applied', $gift_card_object_applied);
+                WC()->session->set('heartland_gift_card_applied', $gift_card_object_applied);
                 WC()->session->__unset('securesubmit_gift_card_object');
             }
         }
@@ -215,7 +218,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
 
     protected function updateGiftCardTotals()
     {
-        $gift_cards_applied = WC()->session->get('securesubmit_gift_card_applied');
+        $gift_cards_applied = WC()->session->get('heartland_gift_card_applied');
         $securesubmit_data  = WC()->session->get('securesubmit_data');
 
         $original_total = $this->getOriginalCartTotal();
@@ -236,7 +239,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
             }
         }
 
-        WC()->session->set('securesubmit_gift_card_applied', $gift_cards_applied);
+        WC()->session->set('heartland_gift_card_applied', $gift_cards_applied);
     }
 
     protected function giftCardUsageAmount($updated = false)
@@ -296,7 +299,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
                 }
             }
         } else {
-            $applied_cards = WC()->session->get('securesubmit_gift_card_applied');
+            $applied_cards = WC()->session->get('heartland_gift_card_applied');
 
             $this->removeAllGiftCardsFromSession();
 
@@ -308,7 +311,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
 
     public function updateOrderTotal($cart_total, $cart_object)
     {
-        $gift_cards = WC()->session->get('securesubmit_gift_card_applied');
+        $gift_cards = WC()->session->get('heartland_gift_card_applied');
 
         if (is_object($gift_cards) && count(get_object_vars($gift_cards)) > 0) {
             $gift_card_totals = $this->getGiftCardTotals();
@@ -322,7 +325,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
     {
         $this->updateGiftCardTotals();
 
-        $gift_cards = WC()->session->get('securesubmit_gift_card_applied');
+        $gift_cards = WC()->session->get('heartland_gift_card_applied');
 
         if (!empty($gift_cards)) {
             $total = 0;
@@ -350,7 +353,7 @@ class HeartlandGatewayGift extends HeartlandGateway {
 
     public function removeAllGiftCardsFromSession()
     {
-        WC()->session->__unset('securesubmit_gift_card_applied');
+        WC()->session->__unset('heartland_gift_card_applied');
         WC()->session->__unset('securesubmit_gift_card_object');
         WC()->session->__unset('securesubmit_data');
     }
@@ -361,14 +364,14 @@ class HeartlandGatewayGift extends HeartlandGateway {
             $removed_card = $_POST['securesubmit_card_id'];
         }
 
-        $applied_cards = WC()->session->get('securesubmit_gift_card_applied');
+        $applied_cards = WC()->session->get('heartland_gift_card_applied');
 
         unset($applied_cards->{$removed_card});
 
         if (count((array) $applied_cards) > 0) {
-            WC()->session->set('securesubmit_gift_card_applied', $applied_cards);
+            WC()->session->set('heartland_gift_card_applied', $applied_cards);
         } else {
-            WC()->session->__unset('securesubmit_gift_card_applied');
+            WC()->session->__unset('heartland_gift_card_applied');
         }
 
         if (isset($_POST['securesubmit_card_id']) && empty($removed_card)) {

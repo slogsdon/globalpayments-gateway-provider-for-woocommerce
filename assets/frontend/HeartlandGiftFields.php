@@ -3,6 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 ?>
+
 <fieldset>
       <div class="securesubmit-content gift-card-content">
             <div class="form-row form-row-wide" id="gift-card-row">
@@ -14,6 +15,7 @@ defined( 'ABSPATH' ) || exit;
                         <p id="gift-card-success"></p>
                   </div>
                   <button id="apply-gift-card" class="button"><?php _e('Apply', 'wc_securesubmit'); ?></button>
+                  
 <?php
       $html = '<script data-cfasync="false" type="text/javascript">';
       $html .= 'if( typeof ajaxurl === "undefined") { ';
@@ -70,5 +72,4 @@ defined( 'ABSPATH' ) || exit;
             </div>
             <div class="clear"></div>
       </div>
-      <!-- End Gift Card -->
 </fieldset>
