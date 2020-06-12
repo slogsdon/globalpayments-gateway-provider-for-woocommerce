@@ -2,9 +2,10 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
+use WC_Order;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
-use WC_Order;
+use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
 
 defined( 'ABSPATH' ) || exit;
@@ -156,16 +157,17 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	/**
-	 * Adds Heartland gift card functionality 
+	 * Add gift card fields if enabled
+	 * 
 	 */
 	public function payment_fields() {
 		parent::payment_fields();
 
 		if ( $this->allow_gift_cards === true ) {
-			include_once dirname(plugin_dir_path(__FILE__)) . '/../assets/frontend/HeartlandGiftFields.php';
+			$path = dirname(plugin_dir_path(__FILE__));
 
-			// SecureSubmit custom CSS
-			wp_enqueue_style('heartland-gift-cards', '/wp-content/plugins/globalpayments-gateway-provider-for-woocommerce/assets/frontend/css/heartland-gift-cards.css');
+			include_once  $path . '/../assets/frontend/HeartlandGiftFields.php';
+			wp_enqueue_style('heartland-gift-cards', $path . '/../assets/frontend/css/heartland-gift-cards.css');
 		}
 	}
 
@@ -184,10 +186,20 @@ class HeartlandGateway extends AbstractGateway {
 		$is_successful = $this->handle_response( $request, $response );
 
 		// Charge HPS gift cards if CC trans succeeds
-		if ($is_successful && !empty(WC()->session->get('heartland_gift_card_applied'))) {
+		if ( $is_successful && !empty( WC()->session->get( 'heartland_gift_card_applied' ) ) ) {
 			$gift_card_order_placement = new gcOrder();
-			$gift_card_order_placement->processGiftCardPayment($order_id, $this->secret_key);
+			$gift_payments_successful = $gift_card_order_placement->processGiftCardPayment( $order_id );
 		}
+
+		// reverse the CC transaction if GC transactions didn't didn't succeed
+		if ( $gift_payments_successful !== true ) {
+			// hook directly into GP SDK to avoid collisions with the existing request
+			Transaction::fromId( $response->transactionReference->transactionId )
+				->reverse( $request->order->data[ 'total' ] )
+				->execute();
+
+			$is_successful = false;
+		} 
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
