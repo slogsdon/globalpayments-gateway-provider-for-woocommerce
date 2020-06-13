@@ -5,9 +5,9 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider;
 
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGateway;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGatewayGift;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards\HeartlandGiftGateway;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards\HeartlandGiftCardOrder;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -32,31 +32,24 @@ class Plugin {
 			return;
 		}
 
-		// probably want something cleaner than this, but for now:
-		$gcthing = new gcOrder();
-		
-		            // Display gift cards used after checkout and on email
-		add_filter('woocommerce_get_order_item_totals', array( $gcthing, 'addItemsToPostOrderDisplay'), PHP_INT_MAX, 2);
-		add_action('woocommerce_checkout_order_processed', array( $gcthing, 'processGiftCardsZeroTotal'), PHP_INT_MAX, 2);
-
 		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
 
 		$HeartlandGateway = new HeartlandGateway();
 
 		if ($HeartlandGateway->allow_gift_cards === true) {
-			$HeartlandGatewayGift = new HeartlandGatewayGift($HeartlandGateway->get_backend_gateway_options()['secretApiKey']);
+			$HeartlandGiftGateway = new HeartlandGiftGateway();
 
-			add_action('wp_ajax_nopriv_use_gift_card', 					array($HeartlandGatewayGift, 'applyGiftCard'));
-			add_action('wp_ajax_use_gift_card', 						array($HeartlandGatewayGift, 'applyGiftCard'));
-			add_action('woocommerce_review_order_before_order_total', 	array($HeartlandGatewayGift, 'addGiftCards'));
-			add_action('woocommerce_cart_totals_before_order_total', 	array($HeartlandGatewayGift, 'addGiftCards'));
-			add_filter('woocommerce_calculated_total',                	array($HeartlandGatewayGift, 'updateOrderTotal'), 10, 2);
-			add_action('wp_ajax_nopriv_remove_gift_card',             	array($HeartlandGatewayGift, 'removeGiftCard'));
-			add_action('wp_ajax_remove_gift_card',                    	array($HeartlandGatewayGift, 'removeGiftCard'));
+			add_action('wp_ajax_nopriv_use_gift_card', 					array($HeartlandGiftGateway, 'applyGiftCard'));
+			add_action('wp_ajax_use_gift_card', 						array($HeartlandGiftGateway, 'applyGiftCard'));
+			add_action('woocommerce_review_order_before_order_total', 	array($HeartlandGiftGateway, 'addGiftCards'));
+			add_action('woocommerce_cart_totals_before_order_total', 	array($HeartlandGiftGateway, 'addGiftCards'));
+			add_filter('woocommerce_calculated_total',                	array($HeartlandGiftGateway, 'updateOrderTotal'), 10, 2);
+			add_action('wp_ajax_nopriv_remove_gift_card',             	array($HeartlandGiftGateway, 'removeGiftCard'));
+			add_action('wp_ajax_remove_gift_card',                    	array($HeartlandGiftGateway, 'removeGiftCard'));
 
-			$gcthing = new gcOrder();
+			$gcthing = new HeartlandGiftCardOrder();
 			
-			add_filter('woocommerce_get_order_item_totals', array( $gcthing, 'addItemsToPostOrderDisplay'), PHP_INT_MAX, 2);
+			add_filter('woocommerce_get_order_item_totals', array( $gcthing, 'addItemsToPostOrderDisplay'), PHP_INT_MAX - 1, 2);
 			add_action('woocommerce_checkout_order_processed', array( $gcthing, 'processGiftCardsZeroTotal'), PHP_INT_MAX, 2);
 		}
 	}

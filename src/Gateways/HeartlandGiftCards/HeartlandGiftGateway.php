@@ -1,17 +1,20 @@
 <?php
 
-namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
+namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards;
 
+use stdClass;
+use Exception;
 use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
-use stdClass;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGateway;
+
 
 defined( 'ABSPATH' ) || exit;
 
-class HeartlandGatewayGift {
+class HeartlandGiftGateway {
 
-    function __construct($secretApiKey) {
-            $this->secretApiKey = $secretApiKey;
+    function __construct() { $HeartlandGateway = new HeartlandGateway();
+            $this->secret_api_key = $HeartlandGateway->get_backend_gateway_options()['secretApiKey'];
         }
 
     protected $temp_balance;
@@ -19,51 +22,15 @@ class HeartlandGatewayGift {
 
     protected function configureServiceContainer() {
         $config = new ServicesConfig();
-        $config->secretApiKey = $this->secretApiKey;
-        // $config->developerId = "123456";
+        $config->secretApiKey = $this->secret_api_key;
+        // $config->developerId = "123456"; // need these from SS team
         // $config->versionNumber = "1234";
 
         ServicesContainer::configure($config);
     }
 
-	/**
-	 * returns gift-specific decline message for display to customer
-	 * 
-	 * @param string $response_code
-	 *
-	 * @return string
-	 */
-	public function get_gift_decline_message( string $response_code ) {
-		switch ($response_code) {
-			case '1':
-			case '2':
-			case '11':
-				return 'An unknown gift error has occurred.';
-			case '3':
-			case '8':
-				return 'The card data is invalid.';
-			case '4':
-				return 'The card has expired.';
-			case '5':
-			case '12':
-				return 'The card was declined.';
-			case '6':
-			case '7':
-			case '10':
-				return 'An error occurred while processing this card.';
-			case '9':
-				return 'Must be greater than or equal 0.';
-			case '13':
-				return 'The amount was partially approved.';
-			case '14':
-				return 'The pin is invalid';			
-			default:
-				return 'An error occurred while processing the gift card.';
-		}
-	}
-
-	// do base gift card stuff
 	public function applyGiftCard() {
+
 		$gift_card_balance = $this->gift_card_balance(
             $_POST['gift_card_number'],
             $_POST['gift_card_pin']
@@ -88,7 +55,6 @@ class HeartlandGatewayGift {
         wp_die();
 	}
 
-	// stolen
 	public function gift_card_balance($gift_card_number, $gift_card_pin)
     {
         $this->configureServiceContainer();
@@ -104,7 +70,7 @@ class HeartlandGatewayGift {
 
         try {
             $response = $this->gift_card->balanceInquiry()
-                ->execute(); // need the service container for this to work
+                ->execute();
         } catch (Exception $e) {
             return array(
                 'error'   => true,
@@ -219,7 +185,6 @@ class HeartlandGatewayGift {
     protected function updateGiftCardTotals()
     {
         $gift_cards_applied = WC()->session->get('heartland_gift_card_applied');
-        $securesubmit_data  = WC()->session->get('securesubmit_data');
 
         $original_total = $this->getOriginalCartTotal();
         $remaining_total = $original_total;
@@ -244,14 +209,10 @@ class HeartlandGatewayGift {
 
     protected function giftCardUsageAmount($updated = false)
     {
-        if ($updated) {
-            $cart_total       = $this->getTotalMinusSecureSubmitGiftCards();
-            $gift_card_object = $this->applied_gift_card;
-        } else {
-            $cart_totals = WC()->session->get('cart_totals');
-            $cart_total = round($cart_totals['total'], 2);
-            $gift_card_object = WC()->session->get('securesubmit_gift_card_object');
-        }
+
+        $cart_totals = WC()->session->get('cart_totals');
+        $cart_total = round($cart_totals['total'], 2);
+        $gift_card_object = WC()->session->get('securesubmit_gift_card_object');
 
         if (round($gift_card_object->temp_balance, 2) <= $cart_total) {
             $gift_card_applied_amount = $gift_card_object->temp_balance;
@@ -324,7 +285,6 @@ class HeartlandGatewayGift {
     protected function getGiftCardTotals()
     {
         $this->updateGiftCardTotals();
-
         $gift_cards = WC()->session->get('heartland_gift_card_applied');
 
         if (!empty($gift_cards)) {
@@ -379,5 +339,4 @@ class HeartlandGatewayGift {
             wp_die();
         }
     }
-
 }

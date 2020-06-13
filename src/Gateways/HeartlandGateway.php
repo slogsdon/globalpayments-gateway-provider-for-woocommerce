@@ -6,7 +6,7 @@ use WC_Order;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 use GlobalPayments\Api\Entities\Transaction;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\gcOrder;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards\HeartlandGiftCardOrder;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -176,8 +176,7 @@ class HeartlandGateway extends AbstractGateway {
 	 *
 	 * @param int $order_id
 	 *
-	 * @return array
-	 * 
+	 * @return array	 * 
 	 */
 	public function process_payment( $order_id ) {
 		$order         = new WC_Order( $order_id );
@@ -187,7 +186,7 @@ class HeartlandGateway extends AbstractGateway {
 
 		// Charge HPS gift cards if CC trans succeeds
 		if ( $is_successful && !empty( WC()->session->get( 'heartland_gift_card_applied' ) ) ) {
-			$gift_card_order_placement = new gcOrder();
+			$gift_card_order_placement = new HeartlandGiftCardOrder();
 			$gift_payments_successful = $gift_card_order_placement->processGiftCardPayment( $order_id );
 		}
 

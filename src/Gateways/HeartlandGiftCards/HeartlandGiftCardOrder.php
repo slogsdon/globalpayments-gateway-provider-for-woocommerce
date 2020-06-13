@@ -1,17 +1,15 @@
 <?php
 
-namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
+namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards;
 
+use Exception;
 use stdClass;
 use WC_Order;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGiftCards\HeartlandGiftGateway;
 
 defined( 'ABSPATH' ) || exit;
 
-/*
- *
- */
-
-class gcOrder {
+class HeartlandGiftCardOrder {
 
     public function addItemsToPostOrderDisplay( $rows, $order_object ) {
         $order_id = $order_object->id;
@@ -41,11 +39,11 @@ class gcOrder {
         return $rows;
     }
 
-    public static function processGiftCardPayment( $order_id, $secret_api_key ) {
+    public static function processGiftCardPayment( $order_id ) {
         $applied_gift_card      = WC()->session->get( 'heartland_gift_card_applied' );
         $securesubmit_data      = WC()->session->get( 'securesubmit_data' );
         $order_awaiting_payment = $order_id;
-        $giftcard_gateway       = new HeartlandGatewayGift($secret_api_key);
+        $giftcard_gateway       = new HeartlandGiftGateway();
         $gift_card_sales        = array();
 
         foreach ( $applied_gift_card as $gift_card ) {
@@ -69,7 +67,8 @@ class gcOrder {
 
             if ( ! isset( $sale_response->responseCode ) || $sale_response->responseCode !== '00' ) {
 
-                $sale_response_message = sprintf( __( 'The %s was not able to be processed.', 'wc_securesubmit' ), $gift_card->gift_card_name );
+                $error_response_message = sprintf( __( '%s was not able to be processed: %s', 'wc_securesubmit' ), $gift_card->gift_card_name, substr( $sale_response->responseMessage, 20 ) );
+                
 
                 // Void the already done transactions if any
                 if ( ! empty( $gift_card_sales ) ) {
@@ -78,11 +77,11 @@ class gcOrder {
 
                 }
 
-                throw new Exception( $sale_response_message );
+                throw new Exception( $error_response_message );
 
             }
 
-            $used_amount_positive = $gift_card->used_amount * - 1;
+            $used_amount_positive = abs( $gift_card->used_amount );
 
             $gift_card_sales[ $gift_card->gift_card_id ] = new stdClass();
 
@@ -110,10 +109,11 @@ class gcOrder {
 
         $giftcard_gateway->removeAllGiftCardsFromSession();
 
+        return true;
+
     }
 
     public function processGiftCardsZeroTotal( $order_id, $posted ) {
-        $appliedCards = WC()->session->get('heartland_gift_card_applied');
 
         if ( empty( $posted[ 'payment_method' ] ) ) {
 
