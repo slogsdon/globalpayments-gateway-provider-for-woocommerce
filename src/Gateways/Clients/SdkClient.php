@@ -8,8 +8,8 @@ use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
+use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
 use GlobalPayments\Api\Services\ReportingService;
-use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
@@ -208,10 +208,10 @@ class SdkClient implements ClientInterface {
 
 	protected function configure_sdk() {
 		$config = $this->set_object_data(
-			new ServicesConfig(),
+			new PorticoConfig(),
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
-		ServicesContainer::configure( $config );
+		ServicesContainer::configureService( $config );
 	}
 
 	protected function set_object_data( $obj, array $data ) {

@@ -4,10 +4,10 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGif
 
 use GlobalPayments\Api\PaymentMethods\GiftCard;
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
-// tacks on needed vars to Heartland's existing class
-class HeartlandGiftCard extends GiftCard {
+class HeartlandGiftCard extends GiftCard
+{
     public $gift_card_name;
     public $gift_card_id;
     public $temp_balance;

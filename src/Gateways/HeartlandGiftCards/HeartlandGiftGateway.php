@@ -4,58 +4,67 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGif
 
 use stdClass;
 use Exception;
-use GlobalPayments\Api\ServicesConfig;
+use GlobalPayments\Api\Entities\Transaction;
+use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\HeartlandGateway;
 
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
-class HeartlandGiftGateway {
-
-    function __construct() { $HeartlandGateway = new HeartlandGateway();
-            $this->secret_api_key = $HeartlandGateway->get_backend_gateway_options()['secretApiKey'];
-        }
+class HeartlandGiftGateway
+{
+    function __construct()
+    {
+        $HeartlandGateway = new HeartlandGateway();
+        $this->secret_api_key = $HeartlandGateway->get_backend_gateway_options()['secretApiKey'];
+    }
 
     protected $temp_balance;
     protected $gift_card_pin_submitted;
 
-    protected function configureServiceContainer() {
-        $config = new ServicesConfig();
+    protected function configureServiceContainer()
+    {
+        $config = new PorticoConfig();
         $config->secretApiKey = $this->secret_api_key;
         // $config->developerId = "123456"; // need these from SS team
         // $config->versionNumber = "1234";
 
-        ServicesContainer::configure($config);
+        ServicesContainer::configureService($config);
     }
 
-	public function applyGiftCard() {
-
-		$gift_card_balance = $this->gift_card_balance(
+    public function applyGiftCard()
+    {
+        $gift_card_balance = $this->giftCardBalance(
             $_POST['gift_card_number'],
             $_POST['gift_card_pin']
         );
 
         if ($gift_card_balance['error']) {
-            echo json_encode(array(
-                'error' => 1,
-                'message' => $gift_card_balance['message'],
-            ));
+            echo json_encode(
+                array(
+                    'error' => 1,
+                    'message' => $gift_card_balance['message'],
+                )
+            );
         } else {
             $this->temp_balance = $gift_card_balance['message'];
 
             $this->addGiftCardToCartSession();
             $this->updateGiftCardCartTotal();
-            echo json_encode(array(
-                'error'   => 0,
-                'balance' => html_entity_decode(get_woocommerce_currency_symbol()) . $gift_card_balance['message'],
-            ));
+
+            echo json_encode(
+                array(
+                    'error'   => 0,
+                    'balance' => html_entity_decode(get_woocommerce_currency_symbol()) . $gift_card_balance['message'],
+                )
+            );
         }
 
         wp_die();
-	}
+    }
 
-	public function gift_card_balance($gift_card_number, $gift_card_pin)
+    public function giftCardBalance($gift_card_number, $gift_card_pin)
     {
         $this->configureServiceContainer();
 
@@ -82,9 +91,9 @@ class HeartlandGiftGateway {
             'error' => false,
             'message' => $response->balanceAmount,
         );
-	}
-	
-	protected function giftCardObject($gift_card_number, $gift_card_pin)
+    }
+
+    protected function giftCardObject($gift_card_number, $gift_card_pin)
     {
         $gift_card         = new HeartlandGiftCard();
         $gift_card->number = $gift_card_number;
@@ -107,7 +116,7 @@ class HeartlandGiftGateway {
         $digits_to_display = 5;
         $last_digits       = substr($gift_card_number, $digits_to_display * - 1);
 
-        return __( 'Gift Card', 'wc_securesubmit' ) . ' ' . $last_digits;
+        return __('Gift Card', 'wc_securesubmit') . ' ' . $last_digits;
     }
 
     protected function updateGiftCardCartTotal()
@@ -239,7 +248,7 @@ class HeartlandGiftGateway {
                 $securesubmit_data->original_total = $original_total;
                 WC()->session->set('securesubmit_data', $securesubmit_data);
 
-                $message           = __( 'Total Before Gift Cards', 'wc_securesubmit' );
+                $message           = __('Total Before Gift Cards', 'wc_securesubmit');
 
                 $order_total_html  = '<tr id="securesubmit_order_total" class="order-total">';
                 $order_total_html .= '<th>' . $message . '</th>';
@@ -338,5 +347,28 @@ class HeartlandGiftGateway {
             echo '';
             wp_die();
         }
+    }
+
+    public function processGiftCardVoid($processed_cards, $order_id)
+    {
+        if (!empty($processed_cards)) {
+            foreach ($processed_cards as $card_id => $card) {
+                try {
+                    $response = Transaction::fromId($card->transactionId)
+                        ->void()
+                        ->execute();
+                } catch (Exception $e) {
+                }
+
+                if (isset($response->responseCode) && $response->responseCode === '0') {
+                    unset($processed_cards[$card_id]);
+                }
+            }
+        } else {
+            $response = false;
+            delete_post_meta($order_id, '_securesubmit_used_card_data');
+        }
+
+        return $response;
     }
 }
