@@ -45,7 +45,7 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	public function get_first_line_support_email() {
-		return 'securesubmitcert@e-hps.com';
+		return 'onlinepayments@heartland.us';
 	}
 
 	public function get_gateway_form_fields() {
@@ -83,6 +83,8 @@ class HeartlandGateway extends AbstractGateway {
 	public function get_backend_gateway_options() {
 		return array(
 			'secretApiKey' => $this->secret_key,
+			'versionNumber' => '1510',
+			'developerId' => '002914'
 		);
 	}
 

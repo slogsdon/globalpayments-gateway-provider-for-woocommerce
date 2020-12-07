@@ -27,8 +27,8 @@ class HeartlandGiftGateway
     {
         $config = new PorticoConfig();
         $config->secretApiKey = $this->secret_api_key;
-        // $config->developerId = "123456"; // need these from SS team
-        // $config->versionNumber = "1234";
+        $config->developerId = "002914";
+        $config->versionNumber = "1510";
 
         ServicesContainer::configureService($config);
     }
