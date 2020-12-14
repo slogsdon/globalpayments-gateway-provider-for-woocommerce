@@ -193,14 +193,15 @@ class HeartlandGateway extends AbstractGateway {
 		}
 
 		// reverse the CC transaction if GC transactions didn't didn't succeed
-		if ( !empty($gift_payments_successful)) {
+		if (!$gift_payments_successful) {			
 			if ($gift_card_order_placement !== false) {
+
 			// hook directly into GP SDK to avoid collisions with the existing request
 			Transaction::fromId( $response->transactionReference->transactionId )
-			->reverse( $request->order->data[ 'total' ] )
-			->execute();
+				->reverse( $request->order->data[ 'total' ] )
+				->execute();
 
-		$is_successful = false;
+			$is_successful = false;
 			}
 		} 
 
