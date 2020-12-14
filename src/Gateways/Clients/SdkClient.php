@@ -6,9 +6,14 @@ use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
+use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
+use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\GatewayConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\GeniusConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\TransitConfig;
 use GlobalPayments\Api\Services\ReportingService;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
@@ -207,10 +212,24 @@ class SdkClient implements ClientInterface {
 	}
 
 	protected function configure_sdk() {
-		$config = $this->set_object_data(
-			new PorticoConfig(),
+		switch ($this->args['SERVICES_CONFIG']['gatewayProvider']) {
+			case GatewayProvider::PORTICO:
+				$gatewayConfig = new PorticoConfig();
+				break;
+			case GatewayProvider::TRANSIT:
+				$gatewayConfig = new TransitConfig();
+				$gatewayConfig->acceptorConfig = new AcceptorConfig(); // defaults should work here
+				break;
+			case GatewayProvider::GENIUS:
+				$gatewayConfig = new GeniusConfig();
+				break;
+		}
+
+		$config = $this->set_object_data(			
+			$gatewayConfig,
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
+
 		ServicesContainer::configureService( $config );
 	}
 
