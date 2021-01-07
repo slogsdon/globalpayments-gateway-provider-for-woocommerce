@@ -68,3 +68,6 @@ admin
   capture auth
   capture verify
   refund / reverse
+
+Tony Notes:
+12/7 - TransIT generate key wont' work until new version of SDK is pulled in
