@@ -190,20 +190,20 @@ class HeartlandGateway extends AbstractGateway {
 		if ( $is_successful && !empty( WC()->session->get( 'heartland_gift_card_applied' ) ) ) {
 			$gift_card_order_placement = new HeartlandGiftCardOrder();
 			$gift_payments_successful = $gift_card_order_placement->processGiftCardPayment( $order_id );
+
+			// reverse the CC transaction if GC transactions didn't didn't succeed
+			if (!$gift_payments_successful) {			
+				if ($gift_card_order_placement !== false) {
+
+				// hook directly into GP SDK to avoid collisions with the existing request
+				Transaction::fromId( $response->transactionReference->transactionId )
+					->reverse( $request->order->data[ 'total' ] )
+					->execute();
+
+				$is_successful = false;
+				}
+			} 
 		}
-
-		// reverse the CC transaction if GC transactions didn't didn't succeed
-		if (!$gift_payments_successful) {			
-			if ($gift_card_order_placement !== false) {
-
-			// hook directly into GP SDK to avoid collisions with the existing request
-			Transaction::fromId( $response->transactionReference->transactionId )
-				->reverse( $request->order->data[ 'total' ] )
-				->execute();
-
-			$is_successful = false;
-			}
-		} 
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',

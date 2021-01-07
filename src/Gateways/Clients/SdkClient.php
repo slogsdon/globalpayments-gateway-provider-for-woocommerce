@@ -122,7 +122,7 @@ class SdkClient implements ClientInterface {
 	 */
 	protected function get_transaction_builder() {
 		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
-			return ServicesContainer::instance()->getClient();
+			return ServicesContainer::instance()->getClient( 'default' ); // this value should always be safe here
 		}
 
 		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'transactionDetail' ) {
