@@ -12,6 +12,14 @@
 	 * @param {object} options
 	 */
 	function GlobalPaymentsWooCommerce(options) {
+
+		/**
+		 * Card form instance
+		 *
+		 * @type {any}
+		 */
+		this.cardForm = {};
+
 		/**
 		 * Payment gateway id
 		 *
@@ -114,17 +122,17 @@
 
 			GlobalPayments.configure( this.gatewayOptions );
 
-			var cardForm = GlobalPayments.ui.form(
+			this.cardForm = GlobalPayments.ui.form(
 				{
 					fields: this.getFieldConfiguration(),
 					styles: this.getStyleConfiguration()
 				}
 			);
 
-			cardForm.on( 'submit', 'click', this.blockOnSubmit.bind( this ) );
-			cardForm.on( 'token-success', this.handleResponse.bind( this ) );
-			cardForm.on( 'token-error', this.handleErrors.bind( this ) );
-			cardForm.on( 'error', this.handleErrors.bind( this ) );
+			this.cardForm.on( 'submit', 'click', this.blockOnSubmit.bind( this ) );
+			this.cardForm.on( 'token-success', this.handleResponse.bind( this ) );
+			this.cardForm.on( 'token-error', this.handleErrors.bind( this ) );
+			this.cardForm.on( 'error', this.handleErrors.bind( this ) );
 			GlobalPayments.on( 'error', this.handleErrors.bind( this ) );
 		},
 
@@ -181,23 +189,36 @@
 				return;
 			}
 
-			var tokenResponseElement =
-				/**
-				 * Get hidden
-				 *
-				 * @type {HTMLInputElement}
-				 */
-				(document.getElementById( this.id + '-token_response' ));
-			if ( ! tokenResponseElement) {
-				tokenResponseElement      = document.createElement( 'input' );
-				tokenResponseElement.id   = this.id + '-token_response';
-				tokenResponseElement.name = this.id + '[token_response]';
-				tokenResponseElement.type = 'hidden';
-				this.getForm().appendChild( tokenResponseElement );
-			}
+			console.log(response);
 
-			tokenResponseElement.value = JSON.stringify( response );
-			this.placeOrder();
+			this.cardForm.frames["card-cvv"].getCvv().then(function (c) {
+
+				// never makes it here
+				alert(c);
+
+				var tokenResponseElement =
+					/**
+					 * Get hidden
+					 *
+					 * @type {HTMLInputElement}
+					 */
+					(document.getElementById( this.id + '-token_response' ));
+				if ( ! tokenResponseElement) {
+					tokenResponseElement      = document.createElement( 'input' );
+					tokenResponseElement.id   = this.id + '-token_response';
+					tokenResponseElement.name = this.id + '[token_response]';
+					tokenResponseElement.type = 'hidden';
+					this.getForm().appendChild( tokenResponseElement );
+				}
+
+				tokenResponseElement.value = JSON.stringify( response );
+				this.placeOrder();
+
+			});
+
+
+
+
 		},
 
 		/**
@@ -335,7 +356,7 @@
 		 * @returns {object}
 		 */
 		getStyleConfiguration: function () {
-			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.3.0/assets';
+			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.6.0/assets';
 			return {
 				'html': {
 					'font-size': '62.5%'
