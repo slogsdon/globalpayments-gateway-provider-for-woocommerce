@@ -138,6 +138,11 @@
 			this.cardForm.on( 'token-error', this.handleErrors.bind( this ) );
 			this.cardForm.on( 'error', this.handleErrors.bind( this ) );
 			GlobalPayments.on( 'error', this.handleErrors.bind( this ) );
+
+			// match the visibility of our payment form
+			this.cardForm.ready( function () {
+				this.toggleSubmitButtons();
+			} );
 		},
 
 		/**
@@ -150,7 +155,7 @@
 			el.id        = this.getSubmitButtonTargetSelector().replace( '#', '' );
 			el.className = 'globalpayments ' + this.id + ' card-submit';
 			$( this.getPlaceOrderButtonSelector() ).after( el );
-			// match the visibilit of our payment form
+			// match the visibility of our payment form
 			this.toggleSubmitButtons();
 		},
 
@@ -162,7 +167,7 @@
 		 */
 		toggleSubmitButtons: function () {
 			var paymentGatewaySelected = $( this.getPaymentMethodRadioSelector() ).is( ':checked' );
-			var savedCardsAvailable    = $( this.getStoredPaymentMethodsRadioSelector() ).length > 0;
+			var savedCardsAvailable    = $( this.getStoredPaymentMethodsRadioSelector() + '[value!="new"]' ).length > 0;
 			var newSavedCardSelected   = 'new' === $( this.getStoredPaymentMethodsRadioSelector() + ':checked' ).val();
 
 			var shouldBeVisible = (paymentGatewaySelected && ! savedCardsAvailable) || (savedCardsAvailable && newSavedCardSelected);
@@ -198,7 +203,6 @@
 			var that = this;
 
 			this.cardForm.frames["card-cvv"].getCvv().then(function (c) {
-
 				// never makes it here
 				alert(c);
 
