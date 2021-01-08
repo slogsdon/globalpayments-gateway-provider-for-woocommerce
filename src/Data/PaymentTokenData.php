@@ -59,6 +59,11 @@ class PaymentTokenData {
 		}
 
 		$token = $this->get_single_use_token();
+
+		if ( ! $token->get_meta( self::KEY_SHOULD_SAVE_TOKEN, true ) ) {
+			return;
+		}
+
 		$token->set_token( $multi_use_token );
 		$token->set_user_id( $user_id );
 		$token->set_gateway_id( $this->request->gateway_id );
