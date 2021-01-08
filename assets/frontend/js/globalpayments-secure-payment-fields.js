@@ -191,6 +191,8 @@
 
 			console.log(response);
 
+			var that = this;
+
 			this.cardForm.frames["card-cvv"].getCvv().then(function (c) {
 
 				// never makes it here
@@ -202,23 +204,19 @@
 					 *
 					 * @type {HTMLInputElement}
 					 */
-					(document.getElementById( this.id + '-token_response' ));
+					(document.getElementById( that.id + '-token_response' ));
 				if ( ! tokenResponseElement) {
 					tokenResponseElement      = document.createElement( 'input' );
-					tokenResponseElement.id   = this.id + '-token_response';
-					tokenResponseElement.name = this.id + '[token_response]';
+					tokenResponseElement.id   = that.id + '-token_response';
+					tokenResponseElement.name = that.id + '[token_response]';
 					tokenResponseElement.type = 'hidden';
-					this.getForm().appendChild( tokenResponseElement );
+					that.getForm().appendChild( tokenResponseElement );
 				}
 
 				tokenResponseElement.value = JSON.stringify( response );
-				this.placeOrder();
+				that.placeOrder();
 
 			});
-
-
-
-
 		},
 
 		/**
