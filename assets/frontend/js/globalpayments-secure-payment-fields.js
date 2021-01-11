@@ -203,8 +203,13 @@
 			var that = this;
 
 			this.cardForm.frames["card-cvv"].getCvv().then(function (c) {
-				// never makes it here
-				alert(c);
+				
+				/**
+				 * CVV; needed for TransIT gateway processing only
+				 *
+				 * @type {string}
+				 */
+				var cvvVal = c;
 
 				var tokenResponseElement =
 					/**
@@ -221,9 +226,9 @@
 					that.getForm().appendChild( tokenResponseElement );
 				}
 
+				response.details.cardSecurityCode = cvvVal;
 				tokenResponseElement.value = JSON.stringify( response );
 				that.placeOrder();
-
 			});
 		},
 

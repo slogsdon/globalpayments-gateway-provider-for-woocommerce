@@ -27,6 +27,13 @@ class PaymentTokenData {
 	protected $request;
 
 	/**
+	 * Used w/TransIT gateway
+	 *
+	 * @var string
+	 */
+	public static $tsepCvv = null;
+
+	/**
 	 * Standardize getting single- and multi-use token data
 	 *
 	 * @param RequestInterface $request
@@ -95,6 +102,8 @@ class PaymentTokenData {
 		if ( isset( $data->details->expiryMonth ) ) {
 			$token->set_expiry_month( $data->details->expiryMonth );
 		}
+
+		static::$tsepCvv = isset( $data->details->cardSecurityCode ) ? $data->details->cardSecurityCode : null;
 
 		if ( isset( $data->details->cardType ) && isset( $this->card_type_map[ $data->details->cardType ] ) ) {
 			$token->set_card_type( $this->card_type_map[ $data->details->cardType ] );

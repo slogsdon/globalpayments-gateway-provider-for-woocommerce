@@ -10,7 +10,6 @@ use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
-use GlobalPayments\Api\ServiceConfigs\Gateways\GatewayConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\GeniusConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\TransitConfig;
@@ -193,6 +192,10 @@ class SdkClient implements ClientInterface {
 		$this->card_data->token    = $token->get_token();
 		$this->card_data->expMonth = $token->get_expiry_month();
 		$this->card_data->expYear  = $token->get_expiry_year();
+
+		if ( isset( PaymentTokenData::$tsepCvv ) ) {
+			$this->card_data->cvn = PaymentTokenData::$tsepCvv;
+		}
 	}
 
 	protected function prepare_address( $address_type, array $data ) {
