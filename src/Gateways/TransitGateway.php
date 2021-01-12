@@ -3,6 +3,7 @@
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -175,5 +176,24 @@ class TransitGateway extends AbstractGateway {
 		$request  = $this->prepare_request( self::TXN_TYPE_CREATE_MANIFEST );
 		$response = $this->submit_request( $request );
 		return $response;
+	}
+
+	/**
+	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order
+	 *
+	 * @param int $order_id
+	 * @param null|number $amount
+	 * @param string $reason
+	 *
+	 * @return array
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		$txn_type 		= self::TXN_TYPE_REFUND;
+		$order			= new WC_Order( $order_id );
+		$request		= $this->prepare_request( $txn_type, $order );
+		$response		= $this->submit_request( $request );
+		$is_successful	= $this->handle_response( $request, $response );
+
+		return $is_successful;
 	}
 }
