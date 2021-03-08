@@ -58,28 +58,26 @@ class PaymentTokenData {
 		$user_id        = get_current_user_id();
 		$current_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, $this->request->gateway_id );
 
-		if ( $this->request->gateway_id === "globalpayments_transit" ) {
-			return;
-		}
-
-		// a card number should only have a single token stored
-		foreach ( $current_tokens as $t ) {
-			if ( $t->get_token() === $multi_use_token ) {
-				$t->delete( true );
-			}
-		}
-
 		$token = $this->get_single_use_token();
 
-		if ( ! $token->get_meta( self::KEY_SHOULD_SAVE_TOKEN, true ) ) {
-			return;
-		}
+		if ( !empty( $token ) ) {
+			// a card number should only have a single token stored
+			foreach ( $current_tokens as $t ) {
+				if ( $t->get_token() === $multi_use_token ) {
+					$t->delete( true );
+				}
+			}
 
-		$token->set_token( $multi_use_token );
-		$token->set_user_id( $user_id );
-		$token->set_gateway_id( $this->request->gateway_id );
-		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
-		$token->save();
+			if ( ! $token->get_meta( self::KEY_SHOULD_SAVE_TOKEN, true ) ) {
+				return;
+			}
+
+			$token->set_token( $multi_use_token );
+			$token->set_user_id( $user_id );
+			$token->set_gateway_id( $this->request->gateway_id );
+			$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
+			$token->save();
+		}
 	}
 
 	public function get_single_use_token() {
@@ -89,6 +87,11 @@ class PaymentTokenData {
 
 		$gateway = $this->request->get_request_data( 'payment_method' );
 		$data    = json_decode( stripslashes( $this->request->get_request_data( $gateway )['token_response'] ) );
+
+		if ( empty( $data ) ) {
+			return null;
+		}
+
 		$token   = new WC_Payment_Token_CC();
 
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName
