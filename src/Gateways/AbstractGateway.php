@@ -5,6 +5,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 defined( 'ABSPATH' ) || exit;
 
 use Exception;
+use GlobalPayments\Api\Entities\Exceptions\ApiException;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 use WC_Payment_Gateway_CC;
 use WC_Order;
@@ -543,6 +544,18 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return bool
 	 */
 	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
+
+		if ($response->responseCode !== '00' || $response->responseMessage === 'Partially Approved') {
+			if ($response->responseCode === '10' || $response->responseMessage === 'Partially Approved') {
+				try {
+					$response->void()->withDescription('POST_AUTH_USER_DECLINE')->execute();
+					return false;
+				} catch (\Exception $e) { /** om nom */ }
+			}
+
+			throw new ApiException($this->mapResponseCodeToFriendlyMessage($response->responseCode));
+		}
+
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
 		if ( '00' !== $response->responseCode ) {			
 			$woocommerce = WC();
