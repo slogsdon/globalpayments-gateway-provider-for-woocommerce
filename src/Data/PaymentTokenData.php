@@ -58,6 +58,10 @@ class PaymentTokenData {
 		$user_id        = get_current_user_id();
 		$current_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, $this->request->gateway_id );
 
+		if ( $this->request->gateway_id === "globalpayments_transit" ) {
+			return;
+		}
+
 		// a card number should only have a single token stored
 		foreach ( $current_tokens as $t ) {
 			if ( $t->get_token() === $multi_use_token ) {
