@@ -474,12 +474,14 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
 
-		$note_text = sprintf(
-			'%s was reversed or refunded. Transaction ID: %s ',
-			$amount, $response->transactionReference->transactionId
-		);
-
-		$order->add_order_note($note_text);
+		if ($is_successful) {
+			$note_text = sprintf(
+				'%s%s was reversed or refunded. Transaction ID: %s ',	
+				get_woocommerce_currency_symbol(), $amount, $response->transactionReference->transactionId
+			);
+	
+			$order->add_order_note($note_text);
+		}
 
 		return $is_successful;
 	}
