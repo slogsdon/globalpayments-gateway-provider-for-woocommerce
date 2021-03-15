@@ -6,7 +6,10 @@ use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
+use GlobalPayments\Api\Entities\Enums\CardType;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\Api\Entities\Enums\StoredCredentialInitiator;
+use GlobalPayments\Api\Entities\StoredCredential;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
@@ -133,6 +136,11 @@ class SdkClient implements ClientInterface {
 			return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
 		}
 
+		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'capture' ) {
+			$subject = Transaction::fromId( $this->get_arg( 'GATEWAY_ID' ) );
+			return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
+		}
+
 		$subject =
 			in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->auth_transactions, true )
 			? $this->card_data : $this->previous_transaction;
@@ -181,6 +189,18 @@ class SdkClient implements ClientInterface {
 		if ( $this->has_arg( RequestArg::AUTH_AMOUNT ) ) {
 			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
+
+		if ( $this->has_arg( RequestArg::STORED_CREDENTIAL ) ) {
+			$this->builder_args['storedCredential'] = array( $this->prepare_stored_credential_data( $this->get_arg( RequestArg::STORED_CREDENTIAL ) ) );
+		}
+	}
+
+	protected function prepare_stored_credential_data( $storedCredsUsed ) {
+		if ( $storedCredsUsed ) {
+			$storedCredsDetails = new StoredCredential;
+			$storedCredsDetails->initiator = StoredCredentialInitiator::MERCHANT;
+			return $storedCredsDetails;
+		}
 	}
 
 	protected function prepare_card_data( WC_Payment_Token_CC $token = null ) {
@@ -192,6 +212,40 @@ class SdkClient implements ClientInterface {
 		$this->card_data->token    = $token->get_token();
 		$this->card_data->expMonth = $token->get_expiry_month();
 		$this->card_data->expYear  = $token->get_expiry_year();
+
+		/**
+		 * $token->get_card_type() will return one of:
+		 * "visa"
+		 * "mastercard"
+		 * "american express"
+		 * "discover"
+		 * "diners"
+		 * "jcb"
+		 */
+
+		$this->card_data->cardType = CardType::DISCOVER;
+
+		// map for use with GlobalPayments SDK
+		switch( $token->get_card_type() ) {
+			case "visa":
+				$this->card_data->cardType = CardType::VISA;
+				break;
+			case "mastercard":
+				$this->card_data->cardType = CardType::MASTERCARD;
+				break;
+			case "american express":
+				$this->card_data->cardType = CardType::AMEX;
+				break;
+			case "discover":
+				$this->card_data->cardType = CardType::DISCOVER;
+				break;
+			case "diners":
+				$this->card_data->cardType = CardType::DINERS;
+				break;
+			case "jcb":
+				$this->card_data->cardType = CardType::JCB;
+				break;
+		}
 
 		if ( isset( PaymentTokenData::$tsepCvv ) ) {
 			$this->card_data->cvn = PaymentTokenData::$tsepCvv;

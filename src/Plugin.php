@@ -33,6 +33,8 @@ class Plugin {
 		}
 
 		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
+		add_action( 'woocommerce_order_actions', array( Gateways\AbstractGateway::class, 'addCaptureOrderAction' ) );
+		add_action( 'woocommerce_order_action_capture_credit_card_authorization', array( Gateways\AbstractGateway::class, 'capture_credit_card_authorization' ) );
 
 		$HeartlandGateway = new HeartlandGateway();
 

@@ -487,7 +487,41 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	}
 
 	/**
-	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order
+	 * Handle capture auth requests via WP Admin > WooCommerce > Edit Order
+	 *
+	 * @param int $order_id
+	 *
+	 * @return array
+	 */
+	public static function capture_credit_card_authorization( $order_id ) {
+		$order    = new WC_Order( $order_id );
+
+		switch ($order->get_payment_method()) {
+			case "globalpayments_heartland":
+				$gateway = new HeartlandGateway();
+				break;
+			case "globalpayments_transit":
+				$gateway = new TransitGateway();
+				break;
+			case "globalpayments_genius":
+				$gateway = new GeniusGateway();
+				break;
+		};
+
+		$request  = $gateway->prepare_request( self::TXN_TYPE_CAPTURE, $order );
+		$response = $gateway->submit_request( $request );
+
+		if ( $response->responseCode === "00" && $response->responseMessage === "Success" ) {
+			$order->add_order_note( 
+				"Transaction captured. Transaction ID for the capture: " . $response->transactionReference->transactionId 
+			);
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order > Order actions
 	 *
 	 * @param int $order_id
 	 *
@@ -519,6 +553,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			self::TXN_TYPE_REFUND                 => Requests\RefundRequest::class,
 			self::TXN_TYPE_REVERSAL               => Requests\ReversalRequest::class,
 			self::TXN_TYPE_REPORT_TXN_DETAILS     => Requests\TransactionDetailRequest::class,
+			self::TXN_TYPE_CAPTURE				  => Requests\CaptureAuthorizationRequest::class,
 		);
 
 		if ( ! isset( $map[ $txn_type ] ) ) {
@@ -612,4 +647,16 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		return 'An error occurred while processing the card.';
 	}
 
+	/**
+     * Adds delayed capture functionality to the "Edit Order" screen
+     *
+     * @param array $actions
+     *
+     * @return array
+     */
+	public static function addCaptureOrderAction( $actions )
+    {
+        $actions['capture_credit_card_authorization'] = 'Capture credit card authorization';
+        return $actions;
+    }
 }
