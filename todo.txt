@@ -70,7 +70,7 @@ admin
   refund / reverse
 
 Tony Notes:
-- Capture Auth doesn't work; now this works but I need to handle errors from duplicate captures
+done - Capture Auth doesn't work;
 done - after using a saved payment method it no longer shows as an option on checkout screen
 done - refund transaction IDs don't show up on order screen
 don't see this issue anymore - TransIt transaction IDs are all the same on the order screens

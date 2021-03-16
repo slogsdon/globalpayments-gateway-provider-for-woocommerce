@@ -509,15 +509,26 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		};
 
 		$request  = $gateway->prepare_request( self::TXN_TYPE_CAPTURE, $order );
-		$response = $gateway->submit_request( $request );
 
-		if ( $response->responseCode === "00" && $response->responseMessage === "Success" ) {
-			$order->add_order_note( 
-				"Transaction captured. Transaction ID for the capture: " . $response->transactionReference->transactionId 
+		try {
+			$response = $gateway->submit_request( $request );
+
+			if ( $response->responseCode === "00" && $response->responseMessage === "Success" ) {
+				$order->add_order_note(
+					"Transaction captured. Transaction ID for the capture: " . $response->transactionReference->transactionId
+				);
+			}
+	
+			return $response;
+		} catch ( Exception $e ) {
+			wp_die(
+				$e->responseMessage,
+				'',
+				array(
+					'back_link' => true,
+				)
 			);
 		}
-
-		return $response;
 	}
 
 	/**
