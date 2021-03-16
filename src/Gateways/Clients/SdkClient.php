@@ -190,17 +190,17 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
 
-		if ( $this->has_arg( RequestArg::STORED_CREDENTIAL ) ) {
-			$this->builder_args['storedCredential'] = array( $this->prepare_stored_credential_data( $this->get_arg( RequestArg::STORED_CREDENTIAL ) ) );
+		if ( !empty( $token->get_meta( 'card_brand_txn_id' ) ) ) {
+			$this->prepare_stored_credential_data( $token->get_meta( 'card_brand_txn_id' ) );
 		}
 	}
 
-	protected function prepare_stored_credential_data( $storedCredsUsed ) {
-		if ( $storedCredsUsed ) {
-			$storedCredsDetails = new StoredCredential;
-			$storedCredsDetails->initiator = StoredCredentialInitiator::MERCHANT;
-			return $storedCredsDetails;
-		}
+	protected function prepare_stored_credential_data( $card_brand_txn_id ) {
+		$storedCredsDetails = new StoredCredential();
+		$storedCredsDetails->initiator = StoredCredentialInitiator::CARDHOLDER;
+		$storedCredsDetails->cardBrandTransactionId = $card_brand_txn_id;
+		
+		return $storedCredsDetails;
 	}
 
 	protected function prepare_card_data( WC_Payment_Token_CC $token = null ) {
