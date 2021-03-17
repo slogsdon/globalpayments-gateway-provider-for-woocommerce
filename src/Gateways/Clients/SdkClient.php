@@ -190,7 +190,7 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
 
-		if ( !empty( $token->get_meta( 'card_brand_txn_id' ) ) ) {
+		if ( $token !== null && !empty( $token->get_meta( 'card_brand_txn_id' ) ) ) {
 			$this->prepare_stored_credential_data( $token->get_meta( 'card_brand_txn_id' ) );
 		}
 	}
