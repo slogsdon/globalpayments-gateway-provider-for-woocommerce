@@ -76,6 +76,6 @@ done - refund transaction IDs don't show up on order screen
 don't see this issue anymore - TransIt transaction IDs are all the same on the order screens
 - Need to support fields for both the TSEP device ID and the MultiPass device ID; finished the cert by hard-coding the multi-pass device ID in the PHP SDK for the trans
 - TSEP error doesn't show to customer, just sits there
-- Discover CUP card type isn't being passed to back-end; causes problems with TransIT
+done - Discover CUP card type isn't being passed to back-end; causes problems with TransIT
 
 - Need to freeze screen on order submit w/TransIT. Screen doesn't show that anything is happening

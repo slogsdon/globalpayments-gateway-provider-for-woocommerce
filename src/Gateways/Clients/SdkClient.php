@@ -223,6 +223,10 @@ class SdkClient implements ClientInterface {
 		 * "jcb"
 		 */
 
+		/**
+		 * Defaulting to Discover since it's currently the only card type not
+		 * returned by JS library in the case of Discover CUP cards.
+		 */		
 		$this->card_data->cardType = CardType::DISCOVER;
 
 		// map for use with GlobalPayments SDK
