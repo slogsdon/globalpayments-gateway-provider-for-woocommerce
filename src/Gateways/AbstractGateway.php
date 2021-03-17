@@ -445,13 +445,23 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return array
 	 */
 	public function add_payment_method() {
-		$request       = $this->prepare_request( self::TXN_TYPE_VERIFY );
-		$response      = $this->submit_request( $request );
+		$request = $this->prepare_request( self::TXN_TYPE_VERIFY );
+		$redirect = wc_get_endpoint_url( 'payment-methods' );
+
+		try {
+			$response = $this->submit_request( $request );
+		} catch ( Exception $e ) {
+			return array(
+				'result'   => 'failure',
+				'redirect' => $redirect,
+			);
+		}
+		
 		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
-			'redirect' => wc_get_endpoint_url( 'payment-methods' ),
+			'redirect' => $redirect,
 		);
 	}
 
