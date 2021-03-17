@@ -54,7 +54,7 @@ class PaymentTokenData {
 		return $token;
 	}
 
-	public function save_new_token( $multi_use_token ) {
+	public function save_new_token( $multi_use_token, $card_brand_txn_id = null ) {
 		$user_id        = get_current_user_id();
 		$current_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, $this->request->gateway_id );
 
@@ -73,6 +73,7 @@ class PaymentTokenData {
 			}
 
 			$token->set_token( $multi_use_token );
+			$token->add_meta_data( 'card_brand_txn_id', $card_brand_txn_id );
 			$token->set_user_id( $user_id );
 			$token->set_gateway_id( $this->request->gateway_id );
 			$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
