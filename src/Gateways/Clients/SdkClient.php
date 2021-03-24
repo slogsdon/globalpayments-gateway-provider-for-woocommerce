@@ -158,7 +158,7 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['currency'] = array( $this->get_arg( RequestArg::CURRENCY ) );
 		}
 
-        $token = null;
+		$token = null;
 		if ( $this->has_arg( RequestArg::CARD_DATA ) ) {
 			/**
 			 * Get the request's single- or multi-use token
@@ -272,7 +272,7 @@ class SdkClient implements ClientInterface {
 	}
 
 	protected function configure_sdk() {
-	    switch ( $this->args['SERVICES_CONFIG']['gatewayProvider'] ) {
+		switch ( $this->args['SERVICES_CONFIG']['gatewayProvider'] ) {
 			case GatewayProvider::PORTICO:
 				$gatewayConfig = new PorticoConfig();
 				break;
@@ -283,15 +283,15 @@ class SdkClient implements ClientInterface {
 			case GatewayProvider::GENIUS:
 				$gatewayConfig = new GeniusConfig();
 				break;
-            case GatewayProvider::GP_API:
-                $gatewayConfig = new GpApiConfig();
-                $servicesConfig = $this->args[ RequestArg::SERVICES_CONFIG ];
-                $gatewayConfig->setAppId( $servicesConfig['AppId'] );
-                $gatewayConfig->setAppKey( $servicesConfig['AppKey'] );
-                $gatewayConfig->setChannel( Channels::CardNotPresent );
+			case GatewayProvider::GP_API:
+				$gatewayConfig = new GpApiConfig();
+				$servicesConfig = $this->args[ RequestArg::SERVICES_CONFIG ];
+				$gatewayConfig->setAppId( $servicesConfig['AppId'] );
+				$gatewayConfig->setAppKey( $servicesConfig['AppKey'] );
+				$gatewayConfig->setChannel( Channels::CardNotPresent );
 
-                unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
-                break;
+				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
+				break;
 		}
 
 		$config = $this->set_object_data(

@@ -36,7 +36,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	const TXN_TYPE_REPORT_TXN_DETAILS = 'transactionDetail';
 
 	//gp-api requests
-    const TXN_TYPE_GET_ACCESS_TOKEN = 'getAccessToken';
+	const TXN_TYPE_GET_ACCESS_TOKEN = 'getAccessToken';
 
 	/**
 	 * Gateway provider. Should be overriden by individual gateway implementations
@@ -414,7 +414,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		if ( 'no' === $this->enabled ) {
 			return;
 		}
-        // hooks only active when the gateway is enabled
+		// hooks only active when the gateway is enabled
 		add_filter( 'woocommerce_credit_card_form_fields', array( $this, 'woocommerce_credit_card_form_fields' ) );
 
 		if ( is_add_payment_method_page() ) {
@@ -433,7 +433,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		$order         = new WC_Order( $order_id );
 		$request       = $this->prepare_request( $this->payment_action, $order );
 		$response      = $this->submit_request( $request );
-        $is_successful = $this->handle_response( $request, $response );
+		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
@@ -458,7 +458,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 				'redirect' => $redirect,
 			);
 		}
-		
+
 		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
@@ -488,10 +488,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 		if ($is_successful) {
 			$note_text = sprintf(
-				'%s%s was reversed or refunded. Transaction ID: %s ',	
+				'%s%s was reversed or refunded. Transaction ID: %s ',
 				get_woocommerce_currency_symbol(), $amount, $response->transactionReference->transactionId
 			);
-	
+
 			$order->add_order_note($note_text);
 		}
 
@@ -518,9 +518,9 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			case "globalpayments_genius":
 				$gateway = new GeniusGateway();
 				break;
-            case "globalpayments_gpapi":
-                $gateway = new GpApiGateway();
-                break;
+			case "globalpayments_gpapi":
+				$gateway = new GpApiGateway();
+				break;
 		};
 
 		$request  = $gateway->prepare_request( self::TXN_TYPE_CAPTURE, $order );
@@ -529,20 +529,20 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			$response = $gateway->submit_request( $request );
 
 			if ( "00" === $response->responseCode && "Success" === $response->responseMessage
-                || 'SUCCESS' === $response->responseCode && "CAPTURED" === $response->responseMessage ) {
+				|| 'SUCCESS' === $response->responseCode && "CAPTURED" === $response->responseMessage ) {
 				$order->add_order_note(
 					"Transaction captured. Transaction ID for the capture: " . $response->transactionReference->transactionId
 				);
 
-                $order->payment_complete( $response->transactionReference->transactionId );
+				$order->payment_complete( $response->transactionReference->transactionId );
 			}
 
 
-	
+
 			return $response;
 		} catch ( Exception $e ) {
 			wp_die(
-                $e->getMessage(),
+				$e->getMessage(),
 				'',
 				array(
 					'back_link' => true,
@@ -584,7 +584,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			self::TXN_TYPE_REFUND                  => Requests\RefundRequest::class,
 			self::TXN_TYPE_REVERSAL                => Requests\ReversalRequest::class,
 			self::TXN_TYPE_REPORT_TXN_DETAILS      => Requests\TransactionDetailRequest::class,
-			self::TXN_TYPE_CAPTURE				   => Requests\CaptureAuthorizationRequest::class,
+			self::TXN_TYPE_CAPTURE                 => Requests\CaptureAuthorizationRequest::class,
 			self::TXN_TYPE_GET_ACCESS_TOKEN        => Requests\GetAccessTokenRequest::class,
 		);
 
@@ -620,7 +620,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return bool
 	 */
 	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
-	    if ($response->responseCode !== '00' && 'SUCCESS' !== $response->responseCode || $response->responseMessage === 'Partially Approved') {
+		if ($response->responseCode !== '00' && 'SUCCESS' !== $response->responseCode || $response->responseMessage === 'Partially Approved') {
 			if ($response->responseCode === '10' || $response->responseMessage === 'Partially Approved') {
 				try {
 					$response->void()->withDescription('POST_AUTH_USER_DECLINE')->execute();
@@ -634,7 +634,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
 		if ( '00' !== $response->responseCode  && 'SUCCESS' !== $response->responseCode ) {
 			$woocommerce = WC();
-			$decline_message = $this->get_decline_message($response->responseCode);			
+			$decline_message = $this->get_decline_message($response->responseCode);
 
 			if (function_exists('wc_add_notice')) {
 				wc_add_notice($decline_message, 'error');
@@ -670,7 +670,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	}
 
 	/**
-	 * Should be overridden by each gateway implementation 
+	 * Should be overridden by each gateway implementation
 	 *
 	 * @return string
 	 */

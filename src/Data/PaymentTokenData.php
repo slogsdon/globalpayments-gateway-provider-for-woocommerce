@@ -90,7 +90,7 @@ class PaymentTokenData {
 		$request_data = $this->request->get_request_data( $gateway );
 		if ( ! isset( $request_data['token_response'] ) ) {
 		    return null;
-        }
+		}
 
 		$data = json_decode( stripslashes( $request_data['token_response'] ) );
 
