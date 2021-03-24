@@ -77,11 +77,11 @@ class SdkClient implements ClientInterface {
 	protected $previous_transaction = null;
 
 	public function set_request( RequestInterface $request ) {
-        $this->args = array_merge(
-            $request->get_default_args(),
-            $request->get_args()
-        );
-        $this->prepare_request_objects();
+		$this->args = array_merge(
+			$request->get_default_args(),
+			$request->get_args()
+		);
+		$this->prepare_request_objects();
 
 		return $this;
 	}
