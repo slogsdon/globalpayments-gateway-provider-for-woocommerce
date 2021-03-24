@@ -315,6 +315,7 @@
 		 * @returns
 		 */
 		handleErrors: function ( error ) {
+			this.resetValidationErrors();
 			this.unblockOnError();
 
 			if ( ! error.reasons ) {
@@ -329,6 +330,39 @@
 					case 'INVALID_CARD_NUMBER':
 						this.showValidationError( 'card-number' );
 						break;
+					case 'INVALID_CARD_EXPIRATION':
+						this.showValidationError( 'card-expiration' );
+						break;
+					case 'INVALID_CARD_SECURITY_CODE':
+						this.showValidationError( 'card-cvv' );
+						break;
+					case 'MANDATORY_DATA_MISSING':
+						var n = reason.message.search( "expiry_month" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-expiration' );
+							break;
+						}
+						var n = reason.message.search( "card.cvn.number" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-cvv' );
+							break;
+						}
+					case 'INVALID_REQUEST_DATA':
+						var n = reason.message.search( "number contains unexpected data" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-number' );
+							break;
+						}
+						var n = reason.message.search( "Luhn Check" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-number' );
+							break;
+						}
+						var n = reason.message.search( "cvv contains unexpected data" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-cvv' );
+							break;
+						}
 					default:
 						break;
 				}
