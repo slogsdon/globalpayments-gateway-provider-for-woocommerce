@@ -57,15 +57,21 @@ class GpApiGateway extends AbstractGateway {
 	public function get_gateway_form_fields() {
 		return array(
 			'app_id' => array(
-				'title'       => __('App Id', 'globalpayments-gateway-provider-for-woocommerce'),
+				'title'       => __( 'App Id', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
-				'description' => __('Get your App Id from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit'),
+				'description' => __(
+					'Get your App Id from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.',
+					'globalpayments-gateway-provider-for-woocommerce'
+				),
 				'default'     => '',
 			),
 			'app_key' => array(
-				'title'       => __('App Key', 'globalpayments-gateway-provider-for-woocommerce'),
+				'title'       => __( 'App Key', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
-				'description' => __('Get your App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit'),
+				'description' => __(
+					'Get your App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.',
+					'globalpayments-gateway-provider-for-woocommerce'
+				),
 				'default'     => '',
 			),
 			'is_production' => array(
@@ -99,7 +105,11 @@ class GpApiGateway extends AbstractGateway {
 		return $response->token;
 	}
 
-	public function mapResponseCodeToFriendlyMessage($responseCode) {
-		return $responseCode;
+	public function mapResponseCodeToFriendlyMessage( $responseCode ) {
+		if ( 'DECLINED' === $responseCode ) {
+			return __( 'Your card has been declined by the bank.', 'globalpayments-gateway-provider-for-woocommerce' );
+		}
+
+		return __( 'An error occurred while processing the card.', 'globalpayments-gateway-provider-for-woocommerce' );
 	}
 }
