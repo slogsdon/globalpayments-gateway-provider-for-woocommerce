@@ -51,7 +51,7 @@ class GpApiGateway extends AbstractGateway {
 	}
 
 	public function get_first_line_support_email() {
-		return 'securesubmitcert@e-hps.com';
+		return 'api.integrations@globalpay.com';
 	}
 
 	public function get_gateway_form_fields() {
