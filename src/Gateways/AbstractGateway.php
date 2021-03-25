@@ -543,11 +543,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 				$order->add_order_note(
 					"Transaction captured. Transaction ID for the capture: " . $response->transactionReference->transactionId
 				);
-
-				$order->payment_complete( $response->transactionReference->transactionId );
 			}
-
-
 
 			return $response;
 		} catch ( Exception $e ) {
