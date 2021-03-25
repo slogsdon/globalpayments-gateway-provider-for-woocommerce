@@ -17,6 +17,16 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
  * Shared gateway method implementations
  */
 abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
+	/**
+	 * Defines production environment
+	 */
+	const ENVIRONMENT_PRODUCTION = 'production';
+
+	/**
+	 * Defines sandbox environment
+	 */
+	const ENVIRONMENT_SANDBOX    = 'sandbox';
+
 	// auth requests
 	const TXN_TYPE_AUTHORIZE = 'authorize';
 	const TXN_TYPE_SALE      = 'charge';

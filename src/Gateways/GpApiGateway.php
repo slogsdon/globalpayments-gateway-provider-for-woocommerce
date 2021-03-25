@@ -8,24 +8,14 @@ use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 defined( 'ABSPATH' ) || exit;
 
 class GpApiGateway extends AbstractGateway {
-    /**
-     * Defines production environment
-     */
-    const ENVIRONMENT_PRODUCTION = 'production';
+	/**
+	 * SDK gateway provider
+	 *
+	 * @var string
+	 */
+	public $gateway_provider = GatewayProvider::GP_API;
 
-    /**
-     * Defines sandbox environment
-     */
-    const ENVIRONMENT_SANDBOX    = 'sandbox';
-
-    /**
-     * SDK gateway provider
-     *
-     * @var string
-     */
-    public $gateway_provider = GatewayProvider::GP_API;
-
-    /**
+	/**
 	 * App ID
 	 *
 	 * @var string
@@ -66,19 +56,19 @@ class GpApiGateway extends AbstractGateway {
 
 	public function get_gateway_form_fields() {
 		return array(
-            'app_id' => array(
-                'title'       => __( 'App Id', 'globalpayments-gateway-provider-for-woocommerce' ),
-                'type'        => 'text',
-                'description' => __( 'Get your App Id from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit' ),
-                'default'     => '',
-            ),
-            'app_key' => array(
-                'title'       => __( 'App Key', 'globalpayments-gateway-provider-for-woocommerce' ),
-                'type'        => 'text',
-                'description' => __( 'Get your App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit' ),
-                'default'     => '',
-            ),
-			'is_production'   => array(
+			'app_id' => array(
+				'title'       => __('App Id', 'globalpayments-gateway-provider-for-woocommerce'),
+				'type'        => 'text',
+				'description' => __('Get your App Id from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit'),
+				'default'     => '',
+			),
+			'app_key' => array(
+				'title'       => __('App Key', 'globalpayments-gateway-provider-for-woocommerce'),
+				'type'        => 'text',
+				'description' => __('Get your App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>.', 'wc_securesubmit'),
+				'default'     => '',
+			),
+			'is_production' => array(
 				'title'   => __( 'Live Mode', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'    => 'checkbox',
 				'default' => 'no',
@@ -86,30 +76,30 @@ class GpApiGateway extends AbstractGateway {
 		);
 	}
 
-    public function get_frontend_gateway_options() {
-        return array(
-            'accessToken' => $this->get_access_token(),
-            'env'         => $this->is_production ? self::ENVIRONMENT_PRODUCTION : self::ENVIRONMENT_SANDBOX,
-        );
-    }
+	public function get_frontend_gateway_options() {
+		return array(
+			'accessToken' => $this->get_access_token(),
+			'env'         => $this->is_production ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
+		);
+	}
 
-    public function get_backend_gateway_options() {
-        return array(
-            'AppId'       => $this->app_id,
-            'AppKey'      => $this->app_key,
-            'developerId' => '',
-            'environment' => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
-        );
-    }
+	public function get_backend_gateway_options() {
+		return array(
+			'AppId'       => $this->app_id,
+			'AppKey'      => $this->app_key,
+			'developerId' => '',
+			'environment' => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
+		);
+	}
 
-    protected function get_access_token() {
-        $request  = $this->prepare_request( self::TXN_TYPE_GET_ACCESS_TOKEN );
-        $response = $this->submit_request( $request );
+	protected function get_access_token() {
+		$request  = $this->prepare_request(self::TXN_TYPE_GET_ACCESS_TOKEN);
+		$response = $this->submit_request($request);
 
-        return $response->token;
-    }
+		return $response->token;
+	}
 
-    public function mapResponseCodeToFriendlyMessage( $responseCode ) {
-	    return $responseCode;
-    }
+	public function mapResponseCodeToFriendlyMessage($responseCode) {
+		return $responseCode;
+	}
 }
