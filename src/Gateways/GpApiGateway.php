@@ -4,10 +4,6 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\ThreeDSecure\CheckEnrollment;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\ThreeDSecure\GpApiGateway_Webhook_Handler;
-use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
-use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
 
