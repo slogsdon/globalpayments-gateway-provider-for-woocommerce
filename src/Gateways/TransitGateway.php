@@ -41,6 +41,13 @@ class TransitGateway extends AbstractGateway {
 	public $device_id;
 
 	/**
+	 * Device ID for TSEP entity specifically
+	 *
+	 * @var string
+	 */
+	public $tsep_device_id;
+
+	/**
 	 * Merchant location's Transaction Key
 	 *
 	 * @var string
@@ -104,6 +111,12 @@ class TransitGateway extends AbstractGateway {
 				'description' => __( 'Get your API keys from your TSYS TransIT account.', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'default'     => '',
 			),
+			'tsep_device_id'       => array(
+				'title'       => __( 'TSEP Device ID', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'type'        => 'text',
+				'description' => __( 'Get your API keys from your TSYS TransIT account.', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'default'     => '',
+			),
 			'transaction_key' => array(
 				'title'       => __( 'Transaction Key', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
@@ -147,7 +160,7 @@ class TransitGateway extends AbstractGateway {
 
 	public function get_frontend_gateway_options() {
 		return array(
-			'deviceId' => $this->device_id,
+			'deviceId' => $this->tsep_device_id,
 			'manifest' => $this->create_manifest(),
 			'env'      => $this->is_production ? 'production' : 'sandbox',
 		);
