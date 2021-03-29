@@ -9,8 +9,8 @@ defined( 'ABSPATH' ) || exit;
             <div class="form-row form-row-wide" id="gift-card-row">
                   <label id="gift-card-label" for="gift-card-number"><?php _e('Use a gift card', 'wc_securesubmit'); ?></label>
                   <div id="gift-card-input">
-                        <input type="tel" placeholder="Gift card" id="gift-card-number" value="5022440000000000098" class="input-text">
-                        <input type="tel" placeholder="PIN" id="gift-card-pin" value="1234" class="input-text">
+                        <input type="tel" placeholder="Gift card" id="gift-card-number" value="" class="input-text">
+                        <input type="tel" placeholder="PIN" id="gift-card-pin" value="" class="input-text">
                         <p id="gift-card-error"></p>
                         <p id="gift-card-success"></p>
                   </div>
