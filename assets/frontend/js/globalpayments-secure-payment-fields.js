@@ -329,6 +329,9 @@
 					case 'INVALID_CARD_NUMBER':
 						this.showValidationError( 'card-number' );
 						break;
+					case 'ERROR':
+						alert(reason.message);
+						break;
 					default:
 						break;
 				}
