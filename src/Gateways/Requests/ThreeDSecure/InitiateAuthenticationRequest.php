@@ -13,6 +13,8 @@ use GlobalPayments\Api\Utils\CountryUtils;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\AbstractRequest;
 
+defined('ABSPATH') || exit;
+
 class InitiateAuthenticationRequest extends AbstractRequest {
 
 	public function get_transaction_type() {

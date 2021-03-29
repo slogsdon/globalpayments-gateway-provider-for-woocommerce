@@ -822,7 +822,7 @@
 	 */
 	(window).globalpayments_secure_payment_fields_params,
 	/**
-	 * Global `globalpayments_secure_payment_fields_params` reference
+	 * Global `globalpayments_secure_payment_threedsecure_params` reference
 	 *
 	 * @type {any}
 	 */
