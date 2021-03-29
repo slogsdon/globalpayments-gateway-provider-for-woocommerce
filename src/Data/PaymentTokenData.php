@@ -86,14 +86,19 @@ class PaymentTokenData {
 			return null;
 		}
 
-		$gateway = $this->request->get_request_data( 'payment_method' );
-		$data    = json_decode( stripslashes( $this->request->get_request_data( $gateway )['token_response'] ) );
+		$gateway      = $this->request->get_request_data( 'payment_method' );
+		$request_data = $this->request->get_request_data( $gateway );
+		if ( ! isset( $request_data['token_response'] ) ) {
+		    return null;
+		}
+
+		$data = json_decode( stripslashes( $request_data['token_response'] ) );
 
 		if ( empty( $data ) ) {
 			return null;
 		}
 
-		$token   = new WC_Payment_Token_CC();
+		$token = new WC_Payment_Token_CC();
 
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName
 		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, $this->get_should_save_for_later(), true );
