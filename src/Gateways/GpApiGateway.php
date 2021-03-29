@@ -4,10 +4,15 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
 class GpApiGateway extends AbstractGateway {
+	/**
+	 * Gateway ID
+	 */
+	const GATEWAY_ID = 'globalpayments_gpapi';
 	/**
 	 * SDK gateway provider
 	 *
@@ -45,13 +50,13 @@ class GpApiGateway extends AbstractGateway {
 	public $developer_id = '';
 
 	public function configure_method_settings() {
-		$this->id                 = 'globalpayments_gpapi';
+		$this->id                 = self::GATEWAY_ID;
 		$this->method_title       = __( 'GP-API', 'globalpayments-gateway-provider-for-woocommerce' );
 		$this->method_description = __( 'Connect to the Global Payments API (GP-API) gateway', 'globalpayments-gateway-provider-for-woocommerce' );
 	}
 
 	public function get_first_line_support_email() {
-		return 'securesubmitcert@e-hps.com';
+		return 'api.integrations@globalpay.com';
 	}
 
 	public function get_gateway_form_fields() {
@@ -91,10 +96,12 @@ class GpApiGateway extends AbstractGateway {
 
 	public function get_backend_gateway_options() {
 		return array(
-			'AppId'       => $this->app_id,
-			'AppKey'      => $this->app_key,
-			'developerId' => '',
-			'environment' => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
+			'AppId'                    => $this->app_id,
+			'AppKey'                   => $this->app_key,
+			'developerId'              => '',
+			'environment'              => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
+			'methodNotificationUrl'    => $this->get_api_url('threedsecure_methodnotification'),
+			'challengeNotificationUrl' => $this->get_api_url('threedsecure_challengenotification'),
 		);
 	}
 
@@ -105,11 +112,147 @@ class GpApiGateway extends AbstractGateway {
 		return $response->token;
 	}
 
+	protected function add_hooks() {
+		parent::add_hooks();
+
+		/**
+		 * The WooCommerce API allows plugins make a callback to a special URL that will then load the specified class (if it exists)
+		 * and run an action. This is also useful for gateways that are not initialized.
+		 */
+		add_action( 'woocommerce_api_threedsecure_checkenrollment', array( $this, 'process_threeDSecure_checkEnrollment' ) );
+		add_action( 'woocommerce_api_threedsecure_methodnotification', array( $this, 'process_threeDSecure_methodNotification' ) );
+		add_action( 'woocommerce_api_threedsecure_initiateauthentication', array( $this, 'process_threeDSecure_initiateAuthentication' ) );
+		add_action( 'woocommerce_api_threedsecure_challengenotification', array( $this, 'process_threeDSecure_challengeNotification' ) );
+	}
+
 	public function mapResponseCodeToFriendlyMessage( $responseCode ) {
 		if ( 'DECLINED' === $responseCode ) {
 			return __( 'Your card has been declined by the bank.', 'globalpayments-gateway-provider-for-woocommerce' );
 		}
 
 		return __( 'An error occurred while processing the card.', 'globalpayments-gateway-provider-for-woocommerce' );
+	}
+
+	public function process_threeDSecure_checkEnrollment()
+	{
+		$request = $this->prepare_request( parent::TXN_TYPE_CHECK_ENROLLMENT );
+		$this->client->submit_request( $request );
+	}
+
+	public function process_threeDSecure_initiateAuthentication()
+	{
+		$request = $this->prepare_request( parent::TXN_TYPE_INITIATE_AUTHENTICATION );
+		$this->client->submit_request( $request );
+	}
+
+	public function process_threeDSecure_methodNotification()
+	{
+		if ( ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) ) {
+			return;
+		}
+		if ( 'application/x-www-form-urlencoded' !== $_SERVER['CONTENT_TYPE'] ) {
+			return;
+		}
+
+		$globalpayments_threedsecure_lib = Plugin::get_url( '/assets/frontend/js/globalpayments-3ds.js' );
+
+		$convertedThreeDSMethodData = json_decode( base64_decode( $_POST['threeDSMethodData'] ) );
+		$response = json_encode([
+			'threeDSServerTransID' => $convertedThreeDSMethodData->threeDSServerTransID,
+		]);
+		$script = <<<EOT
+<!DOCTYPE html>
+<html>
+<body>
+<script src="$globalpayments_threedsecure_lib"></script>
+<script>GlobalPayments.ThreeDSecure.handleMethodNotification($response);</script>
+</body>
+</html>
+EOT;
+		header("Content-Type: text/html");
+		echo $script;
+		exit();
+	}
+
+	public function process_threeDSecure_challengeNotification()
+	{
+		if ( ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) ) {
+			return;
+		}
+		if ( 'application/x-www-form-urlencoded' !== $_SERVER['CONTENT_TYPE'] ) {
+			return;
+		}
+
+		try {
+			$response = new \stdClass();
+
+			$convertedCRes = json_decode(base64_decode($_POST['cres']));
+
+			$response = json_encode([
+				'threeDSServerTransID' => $convertedCRes->threeDSServerTransID,
+				'transStatus'          => $convertedCRes->transStatus ?? '',
+			]);
+
+			$globalpayments_threedsecure_lib = Plugin::get_url( '/assets/frontend/js/globalpayments-3ds.js' );
+			$script =  <<<EOT
+<!DOCTYPE html>
+<html>
+<body>
+<script src="$globalpayments_threedsecure_lib"></script>
+<script>GlobalPayments.ThreeDSecure.handleChallengeNotification($response);</script>
+</body>
+</html>
+EOT;
+			header("Content-Type: text/html");
+			echo $script;
+			exit();
+
+		} catch (Exception $e) {
+			$response = array('error' => TRUE, 'message' => $e->getMessage());
+		}
+	}
+
+	protected function get_session_amount() {
+		$cart_totals = WC()->session->get('cart_totals');
+		return round($cart_totals['total'], 2);
+	}
+
+	protected function get_customer_email() {
+		return WC()->customer->get_billing_email();
+	}
+
+	protected function get_billing_address()
+	{
+		return [
+			'streetAddress1' => WC()->customer->get_billing_address_1(),
+			'streetAddress2' => WC()->customer->get_billing_address_2(),
+			'city'           => WC()->customer->get_billing_city(),
+			'state'          => WC()->customer->get_billing_state(),
+			'postalCode'     => WC()->customer->get_billing_postcode(),
+			'country'        => WC()->customer->get_billing_country(),
+			'countryCode'    => '',
+		];
+	}
+
+	protected function get_shipping_address()
+	{
+		return [
+			'streetAddress1' => WC()->customer->get_shipping_address_1(),
+			'streetAddress2' => WC()->customer->get_shipping_address_2(),
+			'city'           => WC()->customer->get_shipping_city(),
+			'state'          => WC()->customer->get_shipping_state(),
+			'postalCode'     => WC()->customer->get_shipping_postcode(),
+			'country'        => WC()->customer->get_shipping_country(),
+			'countryCode'    => '',
+		];
+	}
+
+	protected function get_api_url($path) {
+		$url = get_home_url( null, "wc-api/", is_ssl() ? 'https' : 'http' );
+		if ( ! empty( $path ) && is_string( $path ) ) {
+			$url .= ltrim( $path, '/' );
+		}
+
+		return $url;
 	}
 }

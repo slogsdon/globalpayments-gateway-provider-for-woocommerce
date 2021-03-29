@@ -5,6 +5,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 defined( 'ABSPATH' ) || exit;
 
 use Exception;
+use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\Api\Entities\Exceptions\ApiException;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 use WC_Payment_Gateway_CC;
@@ -47,6 +48,10 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 	//gp-api requests
 	const TXN_TYPE_GET_ACCESS_TOKEN = 'getAccessToken';
+
+	//3DS requests
+	const TXN_TYPE_CHECK_ENROLLMENT        = 'checkEnrollment';
+	const TXN_TYPE_INITIATE_AUTHENTICATION = 'initiateAuthentication';
 
 	/**
 	 * Gateway provider. Should be overriden by individual gateway implementations
@@ -276,6 +281,39 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 				'id'              => $this->id,
 				'gateway_options' => $this->get_frontend_gateway_options(),
 				'field_options'   => $this->secure_payment_fields(),
+			)
+		);
+
+		// Global Payments scripts for handling 3DS
+		if ( GatewayProvider::GP_API !== $this->gateway_provider ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'globalpayments-threedsecure-lib',
+			Plugin::get_url( '/assets/frontend/js/globalpayments-3ds' )
+			. ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js',
+			array( 'globalpayments-secure-payment-fields-lib' ),
+			WC()->version,
+			true
+		);
+		wp_localize_script(
+			'globalpayments-secure-payment-fields',
+			'globalpayments_secure_payment_threedsecure_params',
+			array(
+				'threedsecure'    => array(
+					'methodNotificationUrl'     => $this->get_api_url('threedsecure_methodnotification'),
+					'challengeNotificationUrl'  => $this->get_api_url('threedsecure_challengenotification'),
+					'checkEnrollmentUrl'        => $this->get_api_url('threedsecure_checkenrollment'),
+					'initiateAuthenticationUrl' => $this->get_api_url('threedsecure_initiateauthentication'),
+				),
+				'order'           => array (
+					'amount'          => $this->get_session_amount(),
+					'currency'        => get_woocommerce_currency(),
+					'billingAddress'  => $this->get_billing_address(),
+					'shippingAddress' => $this->get_shipping_address(),
+					'customerEmail'   => $this->get_customer_email(),
+				),
 			)
 		);
 	}
@@ -528,7 +566,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			case "globalpayments_genius":
 				$gateway = new GeniusGateway();
 				break;
-			case "globalpayments_gpapi":
+			case GpApiGateway::GATEWAY_ID:
 				$gateway = new GpApiGateway();
 				break;
 		};
@@ -592,6 +630,8 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 			self::TXN_TYPE_REPORT_TXN_DETAILS      => Requests\TransactionDetailRequest::class,
 			self::TXN_TYPE_CAPTURE                 => Requests\CaptureAuthorizationRequest::class,
 			self::TXN_TYPE_GET_ACCESS_TOKEN        => Requests\GetAccessTokenRequest::class,
+			self::TXN_TYPE_CHECK_ENROLLMENT        => Requests\ThreeDSecure\CheckEnrollmentRequest::class,
+			self::TXN_TYPE_INITIATE_AUTHENTICATION => Requests\ThreeDSecure\InitiateAuthenticationRequest::class,
 		);
 
 		if ( ! isset( $map[ $txn_type ] ) ) {
@@ -696,4 +736,5 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
         $actions['capture_credit_card_authorization'] = 'Capture credit card authorization';
         return $actions;
     }
+
 }

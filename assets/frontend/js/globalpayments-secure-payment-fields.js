@@ -4,14 +4,16 @@
 	$,
 	wc_checkout_params,
 	GlobalPayments,
-	globalpayments_secure_payment_fields_params
+	GlobalPayments3DS,
+	globalpayments_secure_payment_fields_params,
+	globalpayments_secure_payment_threedsecure_params
 ) {
 	/**
 	 * Frontend code for Global Payments in WooCommerce
 	 *
 	 * @param {object} options
 	 */
-	function GlobalPaymentsWooCommerce(options) {
+	function GlobalPaymentsWooCommerce( options, threeDSecureOptions) {
 
 		/**
 		 * Card form instance
@@ -38,6 +40,11 @@
 		 * @type {object}
 		 */
 		this.gatewayOptions = options.gateway_options;
+
+		this.threedsecure = threeDSecureOptions.threedsecure;
+		this.order = threeDSecureOptions.order;
+		this.tokenResponse = null;
+
 		this.attachEventHandlers();
 	};
 
@@ -198,7 +205,7 @@
 				return;
 			}
 
-			console.log(response);
+			this.tokenResponse = JSON.stringify(response);
 
 			var that = this;
 
@@ -228,8 +235,158 @@
 
 				response.details.cardSecurityCode = cvvVal;
 				tokenResponseElement.value = JSON.stringify( response );
-				that.placeOrder();
 			});
+
+			if ( 'globalpayments_gpapi' !== this.id) {
+				this.placeOrder();
+				return;
+			}
+
+			if ( wc_checkout_params.is_checkout ) {
+				this.validateFields();
+			}
+
+			this.threeDSSecure();
+		},
+
+		/**
+		 * Validate mandatory checkout fields
+		 *
+		 * @returns {boolean}
+		 */
+		validateFields: function() {
+			if ( ! $( '#billing_first_name' ).val()
+				|| ! $( '#billing_last_name' ).val()
+				|| ! $( '#billing_address_1' ).val()
+				|| ! $( '#billing_city' ).val()
+				|| ! $( '#billing_postcode' ).val()
+				|| ! $( '#billing_phone' ).val()
+				|| ! $( '#billing_email' ).val() ) {
+				this.showPaymentError( 'Please fill in the required fields.' );
+				return false;
+			}
+
+			if ( ! this.isValidZipCode( $( '#billing_postcode' ).val() ) ) {
+				this.showPaymentError( 'Billing ZIP is not a valid postcode / ZIP. ' );
+				return false;
+			}
+
+			return true;
+		},
+
+		/**
+		 * Validate zipcode
+		 *
+		 * @param {String} zipcode
+		 * @return {Boolean}
+		 */
+		isValidZipCode: function ( zipcode ) {
+			let pattern = /^[a-zA-Z0-9-\s]{1,16}$/;
+
+			return pattern.test(zipcode);
+		},
+
+		threeDSSecure: function () {
+			const {
+				checkVersion,
+				initiateAuthentication,
+				ChallengeWindowSize,
+			} = GlobalPayments.ThreeDSecure;
+
+			const checkVersionButton = document.querySelector( this.getSubmitButtonTargetSelector() );
+
+			if (!checkVersionButton) {
+				console.error('!checkVersionButton');
+				return;
+			}
+
+			// handle 3DS 2.0 workflow
+			const start3DS = async (e) => {
+				e.preventDefault();
+
+				try {
+					versionCheckData = await checkVersion(this.threedsecure.checkEnrollmentUrl, {
+						tokenResponse: this.tokenResponse,
+						amount: this.order.amount,
+						currency: this.order.currency,
+					});
+
+					// Card holder not enrolled in 3D Secure, continue the Magento flow.
+					if (versionCheckData.enrolled === "NOT_ENROLLED") {
+						this.placeOrder();
+						return;
+					}
+
+					//Something went wrong with CheckEnrolment request on server side
+					if (versionCheckData.error) {
+						this.showPaymentError( versionCheckData.reasons );
+						return;
+					}
+				} catch (e) {
+					this.showPaymentError(e.reasons);
+					return;
+				}
+
+				try {
+					authenticationData = await initiateAuthentication(this.threedsecure.initiateAuthenticationUrl, {
+						tokenResponse: this.tokenResponse,
+						versionCheckData: versionCheckData,
+						challengeWindow: {
+							windowSize: ChallengeWindowSize.Windowed500x600,
+							displayMode: 'lightbox',
+						},
+						order: this.order,
+					});
+
+					switch (authenticationData.result) {
+						case "SUCCESS_AUTHENTICATED":
+						case "AUTHENTICATION_SUCCESSFUL":
+							// frictionless authentication success
+							this.createInputElement( 'serverTransId', authenticationData.serverTransactionId );
+							this.placeOrder();
+							return;
+							break;
+						case "CHALLENGE_REQUIRED":
+							// challenge authentication success
+							if (authenticationData.challenge.response.data.transStatus == "Y") {
+								this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
+								this.placeOrder();
+								return;
+							}
+							// challenge authentication failure
+							this.showPaymentError('3DS Authentication failed. Please try again!');
+							return;
+						case "NOT_AUTHENTICATED":
+						case "FAILED":
+						default:
+							this.showPaymentError('3DS Authentication failed. Please try again!');
+							return;
+					}
+				} catch (e) {
+					console.error(e);
+					this.showPaymentError( e.reasons );
+					return;
+				}
+
+				return false;
+			};
+
+			checkVersionButton.addEventListener('click', start3DS);
+			checkVersionButton.click();
+		},
+
+		createInputElement: function ( name, value ) {
+			var inputElement = (document.getElementById( this.id + '-' + name ));
+
+			if ( ! inputElement) {
+				inputElement      = document.createElement( 'input' );
+				inputElement.id   = this.id + '-' + name;
+				inputElement.name = this.id + '[' + name + ']';
+				inputElement.type = 'hidden';
+				this.getForm().appendChild( inputElement );
+			}
+
+			inputElement.value = value;
 		},
 
 		/**
@@ -305,6 +462,28 @@
 		 */
 		showValidationError: function (fieldType) {
 			$( '.' + this.id + '.' + fieldType + ' .validation-error' ).show();
+		},
+
+		/**
+		 * Shows payment error  and scrolls to it
+		 *
+		 * @param {string} message Error message
+		 *
+		 * @returns
+		 */
+		showPaymentError: function ( message ) {
+			var $form     = $( this.getForm() );
+
+			this.unblockOnError();
+
+			// Remove notices from all sources
+			$( '.woocommerce-error, .woocommerce-message' ).remove();
+
+			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-updateOrderReview woocommerce-error">' + message + '</div>' );
+
+			$( 'html, body' ).animate( {
+				scrollTop: ( $form.offset().top - 100 )
+			}, 1000 );
 		},
 
 		/**
@@ -610,7 +789,7 @@
 		}
 	};
 
-	new GlobalPaymentsWooCommerce( globalpayments_secure_payment_fields_params );
+	new GlobalPaymentsWooCommerce( globalpayments_secure_payment_fields_params, globalpayments_secure_payment_threedsecure_params );
 }(
 	/**
 	 * Global `jQuery` reference
@@ -631,9 +810,21 @@
 	 */
 	(window).GlobalPayments,
 	/**
+	 * Global `GlobalPayments` reference
+	 *
+	 * @type {any}
+	 */
+	(window).GlobalPayments.ThreeDSecure,
+	/**
 	 * Global `globalpayments_secure_payment_fields_params` reference
 	 *
 	 * @type {any}
 	 */
-	(window).globalpayments_secure_payment_fields_params
+	(window).globalpayments_secure_payment_fields_params,
+	/**
+	 * Global `globalpayments_secure_payment_fields_params` reference
+	 *
+	 * @type {any}
+	 */
+	(window).globalpayments_secure_payment_threedsecure_params || {}
 ));

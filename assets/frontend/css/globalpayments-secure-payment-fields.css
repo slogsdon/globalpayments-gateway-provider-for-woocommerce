@@ -1,3 +1,7 @@
 .globalpayments iframe {
 	min-height: 3.6rem;
 }
+
+div[id^="GlobalPayments-overlay-"] {
+	z-index: 1001 !important;
+}
