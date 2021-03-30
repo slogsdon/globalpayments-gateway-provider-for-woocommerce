@@ -4,6 +4,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Clients;
 
 use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
+use GlobalPayments\Api\Entities\Enums\GpApi\Channels;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Entities\Enums\CardType;
@@ -14,6 +15,7 @@ use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\GeniusConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\GpApiConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
 use GlobalPayments\Api\ServiceConfigs\Gateways\TransitConfig;
 use GlobalPayments\Api\Services\ReportingService;
@@ -51,6 +53,7 @@ class SdkClient implements ClientInterface {
 	protected $client_transactions = array(
 		AbstractGateway::TXN_TYPE_CREATE_TRANSACTION_KEY,
 		AbstractGateway::TXN_TYPE_CREATE_MANIFEST,
+		AbstractGateway::TXN_TYPE_GET_ACCESS_TOKEN,
 	);
 
 	protected $refund_transactions = array(
@@ -79,13 +82,13 @@ class SdkClient implements ClientInterface {
 			$request->get_args()
 		);
 		$this->prepare_request_objects();
+
 		return $this;
 	}
 
 	public function execute() {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
-
 		if ( 'transactionDetail' === $this->args['TXN_TYPE'] ) {
 			return $builder->execute();
 		}
@@ -96,8 +99,7 @@ class SdkClient implements ClientInterface {
 
 		$this->prepare_builder( $builder );
 		$response = $builder->execute();
-
-		if ( $response instanceof Transaction && $response->token ) {
+		if ( ! is_null( $this->card_data ) && $response instanceof Transaction && $response->token ) {
 			$this->card_data->token = $response->token;
 			$this->card_data->updateTokenExpiry();
 		}
@@ -156,6 +158,7 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['currency'] = array( $this->get_arg( RequestArg::CURRENCY ) );
 		}
 
+		$token = null;
 		if ( $this->has_arg( RequestArg::CARD_DATA ) ) {
 			/**
 			 * Get the request's single- or multi-use token
@@ -273,7 +276,7 @@ class SdkClient implements ClientInterface {
 	}
 
 	protected function configure_sdk() {
-		switch ($this->args['SERVICES_CONFIG']['gatewayProvider']) {
+		switch ( $this->args['SERVICES_CONFIG']['gatewayProvider'] ) {
 			case GatewayProvider::PORTICO:
 				$gatewayConfig = new PorticoConfig();
 				break;
@@ -284,9 +287,18 @@ class SdkClient implements ClientInterface {
 			case GatewayProvider::GENIUS:
 				$gatewayConfig = new GeniusConfig();
 				break;
+			case GatewayProvider::GP_API:
+				$gatewayConfig = new GpApiConfig();
+				$servicesConfig = $this->args[ RequestArg::SERVICES_CONFIG ];
+				$gatewayConfig->setAppId( $servicesConfig['AppId'] );
+				$gatewayConfig->setAppKey( $servicesConfig['AppKey'] );
+				$gatewayConfig->setChannel( Channels::CardNotPresent );
+
+				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
+				break;
 		}
 
-		$config = $this->set_object_data(			
+		$config = $this->set_object_data(
 			$gatewayConfig,
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);

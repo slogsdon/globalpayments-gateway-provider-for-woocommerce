@@ -68,6 +68,7 @@ class Plugin {
 			Gateways\HeartlandGateway::class,
 			Gateways\GeniusGateway::class,
 			Gateways\TransitGateway::class,
+			Gateways\GpApiGateway::class,
 		);
 
 		foreach ( $gateways as $gateway ) {

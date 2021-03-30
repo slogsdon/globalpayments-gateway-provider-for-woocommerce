@@ -2,6 +2,7 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
+use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use WC_Order;
 
@@ -162,7 +163,7 @@ class TransitGateway extends AbstractGateway {
 		return array(
 			'deviceId' => $this->tsep_device_id,
 			'manifest' => $this->create_manifest(),
-			'env'      => $this->is_production ? 'production' : 'sandbox',
+			'env'      => $this->is_production ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
 		);
 	}
 
@@ -174,7 +175,7 @@ class TransitGateway extends AbstractGateway {
 			'transactionKey' => $this->transaction_key,
 			'deviceId'       => $this->device_id,
 			'developerId'    => '003226G004', // provided during certification
-			'environment'    => $this->is_production ? 'PRODUCTION' : 'TEST',
+			'environment'    => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
 		);
 	}
 
