@@ -5,7 +5,6 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Clients;
 use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
 use GlobalPayments\Api\Entities\Enums\GpApi\Channels;
-use GlobalPayments\Api\Entities\GpApi\AccessTokenInfo;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Entities\Enums\CardType;
