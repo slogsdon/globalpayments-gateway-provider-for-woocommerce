@@ -13,7 +13,7 @@
 	 *
 	 * @param {object} options
 	 */
-	function GlobalPaymentsWooCommerce( options, threeDSecureOptions) {
+	function GlobalPaymentsWooCommerce( options, threeDSecureOptions ) {
 
 		/**
 		 * Card form instance
@@ -28,12 +28,14 @@
 		 * @type {string}
 		 */
 		this.id = options.id;
+
 		/**
 		 * Payment field options
 		 *
 		 * @type {object}
 		 */
 		this.fieldOptions = options.field_options;
+
 		/**
 		 * Payment gateway options
 		 *
@@ -41,8 +43,20 @@
 		 */
 		this.gatewayOptions = options.gateway_options;
 
+		/**
+		 * 3DS endpoints
+		 */
 		this.threedsecure = threeDSecureOptions.threedsecure;
+
+		/**
+		 * Order info
+		 */
 		this.order = threeDSecureOptions.order;
+
+		/**
+		 *
+		 * @type {null}
+		 */
 		this.tokenResponse = null;
 
 		this.attachEventHandlers();
@@ -71,12 +85,18 @@
 			// Order Pay + Add payment method
 			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) || $( 'form#add_payment_method' ).length > 0 ) {
 				$( document ).ready( this.renderPaymentFields.bind( this ) );
+				if ( 'globalpayments_gpapi' === this.id) {
+					$( document ).ready( this.threeDSSecure.bind( this ) );
+				}
 				return;
 			}
 
 			// Checkout
 			if ( wc_checkout_params.is_checkout ) {
 				$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
+				if ( 'globalpayments_gpapi' === this.id) {
+					$( document.body ).on( 'updated_checkout', this.threeDSSecure.bind( this ) );
+				}
 				return;
 			}
 		},
@@ -235,18 +255,8 @@
 
 				response.details.cardSecurityCode = cvvVal;
 				tokenResponseElement.value = JSON.stringify( response );
+				that.placeOrder();
 			});
-
-			if ( 'globalpayments_gpapi' !== this.id) {
-				this.placeOrder();
-				return;
-			}
-
-			if ( wc_checkout_params.is_checkout ) {
-				this.validateFields();
-			}
-
-			this.threeDSSecure();
 		},
 
 		/**
@@ -286,6 +296,9 @@
 			return pattern.test(zipcode);
 		},
 
+		/**
+		 * 3DS Process
+		 */
 		threeDSSecure: function () {
 			const {
 				checkVersion,
@@ -293,10 +306,9 @@
 				ChallengeWindowSize,
 			} = GlobalPayments.ThreeDSecure;
 
-			const checkVersionButton = document.querySelector( this.getSubmitButtonTargetSelector() );
-
-			if (!checkVersionButton) {
-				console.error('!checkVersionButton');
+			const checkVersionButton = $( this.getPlaceOrderButtonSelector() );
+			if ( ! checkVersionButton ) {
+				console.error( 'Warning! Place Order button cannot be loaded' );
 				return;
 			}
 
@@ -304,32 +316,39 @@
 			const start3DS = async (e) => {
 				e.preventDefault();
 
+				if ( wc_checkout_params.is_checkout && ! this.validateFields() ) {
+					return;
+				}
+
 				try {
 					versionCheckData = await checkVersion(this.threedsecure.checkEnrollmentUrl, {
 						tokenResponse: this.tokenResponse,
+						wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
 						amount: this.order.amount,
 						currency: this.order.currency,
 					});
 
-					// Card holder not enrolled in 3D Secure, continue the Magento flow.
+					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
 					if (versionCheckData.enrolled === "NOT_ENROLLED") {
-						this.placeOrder();
+						$( this.getForm() ).submit();
 						return;
 					}
 
 					//Something went wrong with CheckEnrolment request on server side
 					if (versionCheckData.error) {
-						this.showPaymentError( versionCheckData.reasons );
+						this.showPaymentError( versionCheckData.message );
 						return;
 					}
-				} catch (e) {
-					this.showPaymentError(e.reasons);
+				} catch ( e ) {
+					console.error( e.reasons );
+					this.showPaymentError( e.reasons[0].message );
 					return;
 				}
 
 				try {
 					authenticationData = await initiateAuthentication(this.threedsecure.initiateAuthenticationUrl, {
 						tokenResponse: this.tokenResponse,
+						wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
 						versionCheckData: versionCheckData,
 						challengeWindow: {
 							windowSize: ChallengeWindowSize.Windowed500x600,
@@ -343,15 +362,14 @@
 						case "AUTHENTICATION_SUCCESSFUL":
 							// frictionless authentication success
 							this.createInputElement( 'serverTransId', authenticationData.serverTransactionId );
-							this.placeOrder();
+							$( this.getForm() ).submit();
 							return;
-							break;
 						case "CHALLENGE_REQUIRED":
 							// challenge authentication success
 							if (authenticationData.challenge.response.data.transStatus == "Y") {
 								this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
-								this.placeOrder();
-								return;
+								$( this.getForm() ).submit();
+								 return;
 							}
 							// challenge authentication failure
 							this.showPaymentError('3DS Authentication failed. Please try again!');
@@ -363,7 +381,7 @@
 							return;
 					}
 				} catch (e) {
-					console.error(e);
+					console.error( e );
 					this.showPaymentError( e.reasons );
 					return;
 				}
@@ -371,8 +389,7 @@
 				return false;
 			};
 
-			checkVersionButton.addEventListener('click', start3DS);
-			checkVersionButton.click();
+			checkVersionButton.on('click', start3DS );
 		},
 
 		createInputElement: function ( name, value ) {

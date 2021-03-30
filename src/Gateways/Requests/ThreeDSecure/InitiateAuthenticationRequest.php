@@ -26,46 +26,60 @@ class InitiateAuthenticationRequest extends AbstractRequest {
 	}
 
 	public function do_request() {
-		$requestData = $this->data;
-		$tokenResponse = json_decode($requestData->tokenResponse);
 		$responseJson = [];
+		$requestData  = $this->data;
 
-		$paymentMethod = new CreditCardData();
-		$paymentMethod->token = $tokenResponse->paymentReference;
+		try {
+			if ( isset( $requestData->tokenResponse ) ) {
+				$tokenResponse = json_decode( $requestData->tokenResponse );
+				$token = $tokenResponse->paymentReference;
+			} else {
+				$tokenResponse = \WC_Payment_Tokens::get( $requestData->wcTokenId );
+				$token = $tokenResponse->get_token();
+			}
 
-		$threeDSecureData = new ThreeDSecure();
-		$threeDSecureData->serverTransactionId = $requestData->versionCheckData->serverTransactionId;
-		$methodUrlCompletion = ( $requestData->versionCheckData->methodData && $requestData->versionCheckData->methodUrl ) ?
-			MethodUrlCompletion::YES : MethodUrlCompletion::NO;
+			$paymentMethod = new CreditCardData();
+			$paymentMethod->token = $token;
 
-		$threeDSecureData = Secure3dService::initiateAuthentication( $paymentMethod, $threeDSecureData )
-			->withAmount( $requestData->order->amount )
-			->withCurrency( $requestData->order->currency )
-			->withOrderCreateDate( date( 'Y-m-d H:i:s' ) )
-			->withAddress( $this->mapAddress( $requestData->order->billingAddress ), AddressType::BILLING )
-			->withAddress( $this->mapAddress( $requestData->order->shippingAddress ), AddressType::SHIPPING )
-			->withCustomerEmail( $requestData->order->customerEmail )
-			->withAuthenticationSource( $requestData->authenticationSource )
-			->withAuthenticationRequestType( $requestData->authenticationRequestType )
-			->withMessageCategory( $requestData->messageCategory )
-			->withChallengeRequestIndicator( $requestData->challengeRequestIndicator )
-			->withBrowserData( $this->getBrowserData( $requestData ) )
-			->withMethodUrlCompletion( $methodUrlCompletion )
-			->execute();
+			$threeDSecureData = new ThreeDSecure();
+			$threeDSecureData->serverTransactionId = $requestData->versionCheckData->serverTransactionId;
+			$methodUrlCompletion = ( $requestData->versionCheckData->methodData && $requestData->versionCheckData->methodUrl ) ?
+				MethodUrlCompletion::YES : MethodUrlCompletion::NO;
 
-		// frictionless flow
-		if ($threeDSecureData->status !== "CHALLENGE_REQUIRED") {
-			$responseJson["result"]              = $threeDSecureData->status;
-			$responseJson["authenticationValue"] = $threeDSecureData->authenticationValue;
-			$responseJson["serverTransactionId"] = $threeDSecureData->serverTransactionId;
-			$responseJson["messageVersion"]      = $threeDSecureData->messageVersion;
-			$responseJson["eci"]                 = $threeDSecureData->eci;
+			$threeDSecureData = Secure3dService::initiateAuthentication( $paymentMethod, $threeDSecureData )
+				->withAmount( $requestData->order->amount )
+				->withCurrency( $requestData->order->currency )
+				->withOrderCreateDate( date( 'Y-m-d H:i:s' ) )
+				->withAddress( $this->mapAddress( $requestData->order->billingAddress ), AddressType::BILLING )
+				->withAddress( $this->mapAddress( $requestData->order->shippingAddress ), AddressType::SHIPPING )
+				->withCustomerEmail( $requestData->order->customerEmail )
+				->withAuthenticationSource( $requestData->authenticationSource )
+				->withAuthenticationRequestType( $requestData->authenticationRequestType )
+				->withMessageCategory( $requestData->messageCategory )
+				->withChallengeRequestIndicator( $requestData->challengeRequestIndicator )
+				->withBrowserData( $this->getBrowserData( $requestData ) )
+				->withMethodUrlCompletion( $methodUrlCompletion )
+				->execute();
 
-		} else { //challenge flow
-			$responseJson["result"]                               = $threeDSecureData->status;
-			$responseJson["challengeMandated"]                    = $threeDSecureData->challengeMandated;
-			$responseJson["challenge"]["requestUrl"]              = $threeDSecureData->issuerAcsUrl;
-			$responseJson["challenge"]["encodedChallengeRequest"] = $threeDSecureData->payerAuthenticationRequest;
+			// frictionless flow
+			if ($threeDSecureData->status !== "CHALLENGE_REQUIRED") {
+				$responseJson["result"]              = $threeDSecureData->status;
+				$responseJson["authenticationValue"] = $threeDSecureData->authenticationValue;
+				$responseJson["serverTransactionId"] = $threeDSecureData->serverTransactionId;
+				$responseJson["messageVersion"]      = $threeDSecureData->messageVersion;
+				$responseJson["eci"]                 = $threeDSecureData->eci;
+
+			} else { //challenge flow
+				$responseJson["result"]                               = $threeDSecureData->status;
+				$responseJson["challengeMandated"]                    = $threeDSecureData->challengeMandated;
+				$responseJson["challenge"]["requestUrl"]              = $threeDSecureData->issuerAcsUrl;
+				$responseJson["challenge"]["encodedChallengeRequest"] = $threeDSecureData->payerAuthenticationRequest;
+			}
+		} catch (\Exception $e) {
+			$responseJson = [
+				'error'   => true,
+				'message' => $e->getMessage(),
+			];
 		}
 
 		wp_send_json( $responseJson );
