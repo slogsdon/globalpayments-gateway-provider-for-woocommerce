@@ -327,9 +327,7 @@ class SdkClient implements ClientInterface {
 				$gatewayConfig->setChallengeNotificationUrl($servicesConfig['challengeNotificationUrl']);
 				$gatewayConfig->setChannel( Channels::CardNotPresent );
 				if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
-					$accessTokenInfo = new AccessTokenInfo();
-					$accessTokenInfo->setPermissions($this->access_token_permissions);
-					$gatewayConfig->setAccessTokenInfo($accessTokenInfo);
+					$gatewayConfig->setPermissions( $this->access_token_permissions );
 				}
 
 				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
