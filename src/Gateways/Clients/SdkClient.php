@@ -303,6 +303,13 @@ class SdkClient implements ClientInterface {
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
 
+		if (
+			$this->args['SERVICES_CONFIG']['gatewayProvider'] === GatewayProvider::TRANSIT &&
+			$this->get_arg( RequestArg::TXN_TYPE ) === AbstractGateway::TXN_TYPE_CREATE_MANIFEST
+		) {
+			$config->deviceId = $this->args[ RequestArg::SERVICES_CONFIG ]['tsepDeviceId'];
+		}
+
 		ServicesContainer::configureService( $config );
 	}
 

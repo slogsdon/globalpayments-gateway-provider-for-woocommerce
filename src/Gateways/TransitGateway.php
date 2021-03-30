@@ -173,6 +173,7 @@ class TransitGateway extends AbstractGateway {
 			'username'       => $this->user_id, // only needed to create transation key
 			'password'       => $this->password, // only needed to create transation key
 			'transactionKey' => $this->transaction_key,
+			'tsepDeviceId'	 => $this->tsep_device_id,
 			'deviceId'       => $this->device_id,
 			'developerId'    => '003226G004', // provided during certification
 			'environment'    => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
