@@ -19,7 +19,7 @@ class AuthorizationRequest extends AbstractRequest {
 			RequestArg::AMOUNT          => null !== $this->order ? $this->order->get_total() : null,
 			RequestArg::CURRENCY        => null !== $this->order ? $this->order->get_currency() : null,
 			RequestArg::CARD_DATA       => $token,
-			RequestArg::SERVER_TRANS_ID => $this->data[ $this->gateway_id ]['serverTransId'] ?? null;
+			RequestArg::SERVER_TRANS_ID => $this->data[ $this->gateway_id ]['serverTransId'] ?? null,
 		);
 	}
 }
