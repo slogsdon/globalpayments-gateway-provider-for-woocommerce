@@ -246,6 +246,10 @@ class SdkClient implements ClientInterface {
 		 * "jcb"
 		 */
 
+		/**
+		 * Defaulting to Discover since it's currently the only card type not
+		 * returned by JS library in the case of Discover CUP cards.
+		 */		
 		$this->card_data->cardType = CardType::DISCOVER;
 
 		// map for use with GlobalPayments SDK
@@ -340,6 +344,13 @@ class SdkClient implements ClientInterface {
 			$gatewayConfig,
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
+
+		if (
+			$this->args['SERVICES_CONFIG']['gatewayProvider'] === GatewayProvider::TRANSIT &&
+			$this->get_arg( RequestArg::TXN_TYPE ) === AbstractGateway::TXN_TYPE_CREATE_MANIFEST
+		) {
+			$config->deviceId = $this->args[ RequestArg::SERVICES_CONFIG ]['tsepDeviceId'];
+		}
 
 		ServicesContainer::configureService( $config );
 	}

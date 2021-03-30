@@ -559,6 +559,9 @@
 							this.showValidationError( 'card-cvv' );
 							break;
 						}
+					case 'ERROR':
+						alert(reason.message);
+						break;
 					default:
 						break;
 				}
