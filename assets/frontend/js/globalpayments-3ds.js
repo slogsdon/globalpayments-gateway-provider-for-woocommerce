@@ -69,6 +69,1096 @@ this.GlobalPayments.ThreeDSecure = (function (exports) {
         }
     }
 
+    function createCommonjsModule(fn, basedir, module) {
+    	return module = {
+    		path: basedir,
+    		exports: {},
+    		require: function (path, base) {
+    			return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
+    		}
+    	}, fn(module, module.exports), module.exports;
+    }
+
+    function getAugmentedNamespace(n) {
+    	if (n.__esModule) return n;
+    	var a = Object.defineProperty({}, '__esModule', {value: true});
+    	Object.keys(n).forEach(function (k) {
+    		var d = Object.getOwnPropertyDescriptor(n, k);
+    		Object.defineProperty(a, k, d.get ? d : {
+    			enumerable: true,
+    			get: function () {
+    				return n[k];
+    			}
+    		});
+    	});
+    	return a;
+    }
+
+    function commonjsRequire () {
+    	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
+    }
+
+    self.fetch||(self.fetch=function(e,n){return n=n||{},new Promise(function(t,s){var r=new XMLHttpRequest,o=[],u=[],i={},a=function(){return {ok:2==(r.status/100|0),statusText:r.statusText,status:r.status,url:r.responseURL,text:function(){return Promise.resolve(r.responseText)},json:function(){return Promise.resolve(r.responseText).then(JSON.parse)},blob:function(){return Promise.resolve(new Blob([r.response]))},clone:a,headers:{keys:function(){return o},entries:function(){return u},get:function(e){return i[e.toLowerCase()]},has:function(e){return e.toLowerCase()in i}}}};for(var c in r.open(n.method||"get",e,!0),r.onload=function(){r.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm,function(e,n,t){o.push(n=n.toLowerCase()),u.push([n,t]),i[n]=i[n]?i[n]+","+t:t;}),t(a());},r.onerror=s,r.withCredentials="include"==n.credentials,n.headers)r.setRequestHeader(c,n.headers[c]);r.send(n.body||null);})});
+
+    if (!Array.prototype.forEach) {
+        Array.prototype.forEach = function (fn) {
+            for (var i = 0; i < this.length; i++) {
+                fn(this[i], i, this);
+            }
+        };
+    }
+
+    var byteLength_1 = byteLength;
+    var toByteArray_1 = toByteArray;
+    var fromByteArray_1 = fromByteArray;
+
+    var lookup = [];
+    var revLookup = [];
+    var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array;
+
+    var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    for (var i = 0, len = code.length; i < len; ++i) {
+      lookup[i] = code[i];
+      revLookup[code.charCodeAt(i)] = i;
+    }
+
+    // Support decoding URL-safe base64 strings, as Node.js does.
+    // See: https://en.wikipedia.org/wiki/Base64#URL_applications
+    revLookup['-'.charCodeAt(0)] = 62;
+    revLookup['_'.charCodeAt(0)] = 63;
+
+    function getLens (b64) {
+      var len = b64.length;
+
+      if (len % 4 > 0) {
+        throw new Error('Invalid string. Length must be a multiple of 4')
+      }
+
+      // Trim off extra bytes after placeholder bytes are found
+      // See: https://github.com/beatgammit/base64-js/issues/42
+      var validLen = b64.indexOf('=');
+      if (validLen === -1) validLen = len;
+
+      var placeHoldersLen = validLen === len
+        ? 0
+        : 4 - (validLen % 4);
+
+      return [validLen, placeHoldersLen]
+    }
+
+    // base64 is 4/3 + up to two characters of the original data
+    function byteLength (b64) {
+      var lens = getLens(b64);
+      var validLen = lens[0];
+      var placeHoldersLen = lens[1];
+      return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+    }
+
+    function _byteLength (b64, validLen, placeHoldersLen) {
+      return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+    }
+
+    function toByteArray (b64) {
+      var tmp;
+      var lens = getLens(b64);
+      var validLen = lens[0];
+      var placeHoldersLen = lens[1];
+
+      var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen));
+
+      var curByte = 0;
+
+      // if there are placeholders, only get up to the last complete 4 chars
+      var len = placeHoldersLen > 0
+        ? validLen - 4
+        : validLen;
+
+      var i;
+      for (i = 0; i < len; i += 4) {
+        tmp =
+          (revLookup[b64.charCodeAt(i)] << 18) |
+          (revLookup[b64.charCodeAt(i + 1)] << 12) |
+          (revLookup[b64.charCodeAt(i + 2)] << 6) |
+          revLookup[b64.charCodeAt(i + 3)];
+        arr[curByte++] = (tmp >> 16) & 0xFF;
+        arr[curByte++] = (tmp >> 8) & 0xFF;
+        arr[curByte++] = tmp & 0xFF;
+      }
+
+      if (placeHoldersLen === 2) {
+        tmp =
+          (revLookup[b64.charCodeAt(i)] << 2) |
+          (revLookup[b64.charCodeAt(i + 1)] >> 4);
+        arr[curByte++] = tmp & 0xFF;
+      }
+
+      if (placeHoldersLen === 1) {
+        tmp =
+          (revLookup[b64.charCodeAt(i)] << 10) |
+          (revLookup[b64.charCodeAt(i + 1)] << 4) |
+          (revLookup[b64.charCodeAt(i + 2)] >> 2);
+        arr[curByte++] = (tmp >> 8) & 0xFF;
+        arr[curByte++] = tmp & 0xFF;
+      }
+
+      return arr
+    }
+
+    function tripletToBase64 (num) {
+      return lookup[num >> 18 & 0x3F] +
+        lookup[num >> 12 & 0x3F] +
+        lookup[num >> 6 & 0x3F] +
+        lookup[num & 0x3F]
+    }
+
+    function encodeChunk (uint8, start, end) {
+      var tmp;
+      var output = [];
+      for (var i = start; i < end; i += 3) {
+        tmp =
+          ((uint8[i] << 16) & 0xFF0000) +
+          ((uint8[i + 1] << 8) & 0xFF00) +
+          (uint8[i + 2] & 0xFF);
+        output.push(tripletToBase64(tmp));
+      }
+      return output.join('')
+    }
+
+    function fromByteArray (uint8) {
+      var tmp;
+      var len = uint8.length;
+      var extraBytes = len % 3; // if we have 1 byte left, pad 2 bytes
+      var parts = [];
+      var maxChunkLength = 16383; // must be multiple of 3
+
+      // go through the array every three bytes, we'll deal with trailing stuff later
+      for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+        parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)));
+      }
+
+      // pad the end with zeros, but make sure to not forget the extra bytes
+      if (extraBytes === 1) {
+        tmp = uint8[len - 1];
+        parts.push(
+          lookup[tmp >> 2] +
+          lookup[(tmp << 4) & 0x3F] +
+          '=='
+        );
+      } else if (extraBytes === 2) {
+        tmp = (uint8[len - 2] << 8) + uint8[len - 1];
+        parts.push(
+          lookup[tmp >> 10] +
+          lookup[(tmp >> 4) & 0x3F] +
+          lookup[(tmp << 2) & 0x3F] +
+          '='
+        );
+      }
+
+      return parts.join('')
+    }
+
+    var base64Js = {
+    	byteLength: byteLength_1,
+    	toByteArray: toByteArray_1,
+    	fromByteArray: fromByteArray_1
+    };
+
+    var base64 = createCommonjsModule(function (module, exports) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.base64decode = exports.base64encode = void 0;
+
+    function base64encode(text) {
+        var i;
+        var len = text.length;
+        var Arr = typeof Uint8Array !== "undefined" ? Uint8Array : Array;
+        var u8array = new Arr(len);
+        for (i = 0; i < len; i++) {
+            u8array[i] = text.charCodeAt(i);
+        }
+        return base64Js.fromByteArray(u8array);
+    }
+    exports.base64encode = base64encode;
+    function base64decode(text) {
+        var u8Array = base64Js.toByteArray(text);
+        var i;
+        var len = u8Array.length;
+        var bStr = "";
+        for (i = 0; i < len; i++) {
+            bStr += String.fromCharCode(u8Array[i]);
+        }
+        return bStr;
+    }
+    exports.base64decode = base64decode;
+    window.btoa = window.btoa || base64encode;
+    window.atob = window.atob || base64decode;
+
+    });
+
+    var json2 = createCommonjsModule(function (module, exports) {
+    /* -----------------------------------------------------------------------------
+    This file is based on or incorporates material from the projects listed below
+    (collectively, "Third Party Code"). Microsoft is not the original author of the
+    Third Party Code. The original copyright notice and the license, under which
+    Microsoft received such Third Party Code, are set forth below. Such licenses
+    and notices are provided for informational purposes only. Microsoft, not the
+    third party, licenses the Third Party Code to you under the terms of the
+    Apache License, Version 2.0. See License.txt in the project root for complete
+    license information. Microsoft reserves all rights not expressly granted under
+    the Apache 2.0 License, whether by implication, estoppel or otherwise.
+    ----------------------------------------------------------------------------- */
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.JSON = void 0;
+    /*
+        json2.js
+        2011-10-19
+
+        Public Domain.
+
+        NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+
+        See http://www.JSON.org/js.html
+
+        This code should be minified before deployment.
+        See http://javascript.crockford.com/jsmin.html
+
+        USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO
+        NOT CONTROL.
+
+        This file creates a global JSON object containing two methods: stringify
+        and parse.
+
+            JSON.stringify(value, replacer, space)
+                value       any JavaScript value, usually an object or array.
+
+                replacer    an optional parameter that determines how object
+                            values are stringified for objects. It can be a
+                            function or an array of strings.
+
+                space       an optional parameter that specifies the indentation
+                            of nested structures. If it is omitted, the text will
+                            be packed without extra whitespace. If it is a number,
+                            it will specify the number of spaces to indent at each
+                            level. If it is a string (such as "\t" or "&nbsp;"),
+                            it contains the characters used to indent at each level.
+
+                This method produces a JSON text from a JavaScript value.
+
+                When an object value is found, if the object contains a toJSON
+                method, its toJSON method will be called and the result will be
+                stringified. A toJSON method does not serialize: it returns the
+                value represented by the name/value pair that should be serialized,
+                or undefined if nothing should be serialized. The toJSON method
+                will be passed the key associated with the value, and this will be
+                bound to the value
+
+                For example, this would serialize Dates as ISO strings.
+
+                    Date.prototype.toJSON = function (key) {
+                        function f(n) {
+                            // Format integers to have at least two digits.
+                            return n < 10 ? "0" + n : n;
+                        }
+
+                        return this.getUTCFullYear()   + "-" +
+                             f(this.getUTCMonth() + 1) + "-" +
+                             f(this.getUTCDate())      + "T" +
+                             f(this.getUTCHours())     + ":" +
+                             f(this.getUTCMinutes())   + ":" +
+                             f(this.getUTCSeconds())   + "Z";
+                    };
+
+                You can provide an optional replacer method. It will be passed the
+                key and value of each member, with this bound to the containing
+                object. The value that is returned from your method will be
+                serialized. If your method returns undefined, then the member will
+                be excluded from the serialization.
+
+                If the replacer parameter is an array of strings, then it will be
+                used to select the members to be serialized. It filters the results
+                such that only members with keys listed in the replacer array are
+                stringified.
+
+                Values that do not have JSON representations, such as undefined or
+                functions, will not be serialized. Such values in objects will be
+                dropped; in arrays they will be replaced with null. You can use
+                a replacer function to replace those with JSON values.
+                JSON.stringify(undefined) returns undefined.
+
+                The optional space parameter produces a stringification of the
+                value that is filled with line breaks and indentation to make it
+                easier to read.
+
+                If the space parameter is a non-empty string, then that string will
+                be used for indentation. If the space parameter is a number, then
+                the indentation will be that many spaces.
+
+                Example:
+
+                text = JSON.stringify(["e", {pluribus: "unum"}]);
+                // text is "["e",{"pluribus":"unum"}]"
+
+                text = JSON.stringify(["e", {pluribus: "unum"}], null, "\t");
+                // text is "[\n\t"e",\n\t{\n\t\t"pluribus": "unum"\n\t}\n]"
+
+                text = JSON.stringify([new Date()], function (key, value) {
+                    return this[key] instanceof Date ?
+                        "Date(" + this[key] + ")" : value;
+                });
+                // text is "["Date(---current time---)"]"
+
+            JSON.parse(text, reviver)
+                This method parses a JSON text to produce an object or array.
+                It can throw a SyntaxError exception.
+
+                The optional reviver parameter is a function that can filter and
+                transform the results. It receives each of the keys and values,
+                and its return value is used instead of the original value.
+                If it returns what it received, then the structure is not modified.
+                If it returns undefined then the member is deleted.
+
+                Example:
+
+                // Parse the text. Values that look like ISO date strings will
+                // be converted to Date objects.
+
+                myData = JSON.parse(text, function (key, value) {
+                    let a;
+                    if (typeof value === "string") {
+                        a =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
+                        if (a) {
+                            return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4],
+                                +a[5], +a[6]));
+                        }
+                    }
+                    return value;
+                });
+
+                myData = JSON.parse("["Date(09/09/2001)"]", function (key, value) {
+                    let d;
+                    if (typeof value === "string" &&
+                            value.slice(0, 5) === "Date(" &&
+                            value.slice(-1) === ")") {
+                        d = new Date(value.slice(5, -1));
+                        if (d) {
+                            return d;
+                        }
+                    }
+                    return value;
+                });
+
+        This is a reference implementation. You are free to copy, modify, or
+        redistribute.
+    */
+    /*jslint evil: true, regexp: true */
+    /*members "", "\b", "\t", "\n", "\f", "\r", "\"", JSON, "\\", apply,
+        call, charCodeAt, getUTCDate, getUTCFullYear, getUTCHours,
+        getUTCMinutes, getUTCMonth, getUTCSeconds, hasOwnProperty, join,
+        lastIndex, length, parse, prototype, push, replace, slice, stringify,
+        test, toJSON, toString, valueOf
+    */
+    // create a JSON object only if one does not already exist. We create the
+    // methods in a closure to avoid creating global variables.
+    exports.JSON = {};
+    (function () {
+        function f(n) {
+            // format integers to have at least two digits.
+            return n < 10 ? "0" + n : n;
+        }
+        if (typeof Date.prototype.toJSON !== "function") {
+            Date.prototype.toJSON = function (_KEY) {
+                return isFinite(this.valueOf())
+                    ? this.getUTCFullYear() +
+                        "-" +
+                        f(this.getUTCMonth() + 1) +
+                        "-" +
+                        f(this.getUTCDate()) +
+                        "T" +
+                        f(this.getUTCHours()) +
+                        ":" +
+                        f(this.getUTCMinutes()) +
+                        ":" +
+                        f(this.getUTCSeconds()) +
+                        "Z"
+                    : "";
+            };
+            var strProto = String.prototype;
+            var numProto = Number.prototype;
+            numProto.JSON = strProto.JSON = Boolean.prototype.toJSON = function (_KEY) {
+                return this.valueOf();
+            };
+        }
+        var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+        // tslint:disable-next-line
+        var esc = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+        var gap;
+        var indent;
+        var meta = {
+            // table of character substitutions
+            "\b": "\\b",
+            "\t": "\\t",
+            "\n": "\\n",
+            "\f": "\\f",
+            "\r": "\\r",
+            '"': '\\"',
+            "\\": "\\\\",
+        };
+        var rep;
+        function quote(quoteStr) {
+            // if the string contains no control characters, no quote characters, and no
+            // backslash characters, then we can safely slap some quotes around it.
+            // otherwise we must also replace the offending characters with safe escape
+            // sequences.
+            esc.lastIndex = 0;
+            return esc.test(quoteStr)
+                ? '"' +
+                    quoteStr.replace(esc, function (a) {
+                        var c = meta[a];
+                        return typeof c === "string"
+                            ? c
+                            : "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
+                    }) +
+                    '"'
+                : '"' + quoteStr + '"';
+        }
+        function str(key, holder) {
+            // produce a string from holder[key].
+            var i; // the loop counter.
+            var k; // the member key.
+            var v; // the member value.
+            var length;
+            var mind = gap;
+            var partial;
+            var value = holder[key];
+            // if the value has a toJSON method, call it to obtain a replacement value.
+            if (value &&
+                typeof value === "object" &&
+                typeof value.toJSON === "function") {
+                value = value.toJSON(key);
+            }
+            // if we were called with a replacer function, then call the replacer to
+            // obtain a replacement value.
+            if (typeof rep === "function") {
+                value = rep.call(holder, key, value);
+            }
+            // what happens next depends on the value"s type.
+            switch (typeof value) {
+                case "string":
+                    return quote(value);
+                case "number":
+                    // json numbers must be finite. Encode non-finite numbers as null.
+                    return isFinite(value) ? String(value) : "null";
+                case "boolean":
+                case "null":
+                    // if the value is a boolean or null, convert it to a string. Note:
+                    // typeof null does not produce "null". The case is included here in
+                    // the remote chance that this gets fixed someday.
+                    return String(value);
+                // if the type is "object", we might be dealing with an object or an array or
+                // null.
+                case "object":
+                    // due to a specification blunder in ECMAScript, typeof null is "object",
+                    // so watch out for that case.
+                    if (!value) {
+                        return "null";
+                    }
+                    // make an array to hold the partial: string[] results of stringifying this object value.
+                    gap += indent;
+                    partial = [];
+                    // is the value an array?
+                    if (Object.prototype.toString.apply(value, []) === "[object Array]") {
+                        // the value is an array. Stringify every element. Use null as a placeholder
+                        // for non-JSON values.
+                        length = value.length;
+                        for (i = 0; i < length; i += 1) {
+                            partial[i] = str(i.toString(), value) || "null";
+                        }
+                        // join all of the elements together, separated with commas, and wrap them in
+                        // brackets.
+                        v =
+                            partial.length === 0
+                                ? "[]"
+                                : gap
+                                    ? "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]"
+                                    : "[" + partial.join(",") + "]";
+                        gap = mind;
+                        return v;
+                    }
+                    // if the replacer is an array, use it to select the members to be stringified.
+                    if (rep && typeof rep === "object") {
+                        length = rep.length;
+                        for (i = 0; i < length; i += 1) {
+                            if (typeof rep[i] === "string") {
+                                k = rep[i];
+                                v = str(k, value);
+                                if (v) {
+                                    partial.push(quote(k) + (gap ? ": " : ":") + v);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        // otherwise, iterate through all of the keys in the object.
+                        for (k in value) {
+                            if (Object.prototype.hasOwnProperty.call(value, k)) {
+                                v = str(k, value);
+                                if (v) {
+                                    partial.push(quote(k) + (gap ? ": " : ":") + v);
+                                }
+                            }
+                        }
+                    }
+                    // join all of the member texts together, separated with commas,
+                    // and wrap them in braces.
+                    v =
+                        partial.length === 0
+                            ? "{}"
+                            : gap
+                                ? "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}"
+                                : "{" + partial.join(",") + "}";
+                    gap = mind;
+                    return v;
+            }
+            return undefined;
+        }
+        // if the JSON object does not yet have a stringify method, give it one.
+        if (typeof exports.JSON.stringify !== "function") {
+            exports.JSON.stringify = function (value, replacer, space) {
+                // the stringify method takes a value and an optional replacer, and an optional
+                // space parameter, and returns a JSON text. The replacer can be a function
+                // that can replace values, or an array of strings that will select the keys.
+                // a default replacer method can be provided. Use of the space parameter can
+                // produce text that is more easily readable.
+                var i;
+                gap = "";
+                indent = "";
+                // if the space parameter is a number, make an indent string containing that
+                // many spaces.
+                if (typeof space === "number") {
+                    for (i = 0; i < space; i += 1) {
+                        indent += " ";
+                    }
+                    // if the space parameter is a string, it will be used as the indent string.
+                }
+                else if (typeof space === "string") {
+                    indent = space;
+                }
+                // if there is a replacer, it must be a function or an array.
+                // otherwise, throw an error.
+                rep = replacer;
+                if (replacer &&
+                    typeof replacer !== "function" &&
+                    (typeof replacer !== "object" || typeof replacer.length !== "number")) {
+                    throw new Error("JSON.stringify");
+                }
+                // make a fake root object containing our value under the key of "".
+                // return the result of stringifying the value.
+                return str("", { "": value });
+            };
+        }
+        // if the JSON object does not yet have a parse method, give it one.
+        if (typeof exports.JSON.parse !== "function") {
+            exports.JSON.parse = function (text, reviver) {
+                // the parse method takes a text and an optional reviver function, and returns
+                // a JavaScript value if the text is a valid JSON text.
+                var j;
+                function walk(holder, key) {
+                    // the walk method is used to recursively walk the resulting structure so
+                    // that modifications can be made.
+                    var k;
+                    var v;
+                    var value = holder[key];
+                    if (value && typeof value === "object") {
+                        for (k in value) {
+                            if (Object.prototype.hasOwnProperty.call(value, k)) {
+                                v = walk(value, k);
+                                value[k] = v;
+                            }
+                        }
+                    }
+                    return reviver.call(holder, key, value);
+                }
+                // parsing happens in four stages. In the first stage, we replace certain
+                // unicode characters with escape sequences. JavaScript handles many characters
+                // incorrectly, either silently deleting them, or treating them as line endings.
+                text = String(text);
+                cx.lastIndex = 0;
+                if (cx.test(text)) {
+                    text = text.replace(cx, function (a) {
+                        return "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
+                    });
+                }
+                // in the second stage, we run the text against regular expressions that look
+                // for non-JSON patterns. We are especially concerned with "()" and "new"
+                // because they can cause invocation, and "=" because it can cause mutation.
+                // but just to be safe, we want to reject all unexpected forms.
+                // we split the second stage into 4 regexp operations in order to work around
+                // crippling inefficiencies in IE"s and Safari"s regexp engines. First we
+                // replace the JSON backslash pairs with "@" (a non-JSON character). Second, we
+                // replace all simple value tokens with "]" characters. Third, we delete all
+                // open brackets that follow a colon or comma or that begin the text. Finally,
+                // we look to see that the remaining characters are only whitespace or "]" or
+                // "," or ":" or "{" or "}". If that is so, then the text is safe for eval.
+                if (/^[\],:{}\s]*$/.test(text
+                    .replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@")
+                    .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
+                    .replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
+                    // in the third stage we use the eval function to compile the text into a
+                    // javascript structure. The "{" operator is subject to a syntactic ambiguity
+                    // in JavaScript: it can begin a block or an object literal. We wrap the text
+                    // in parens to eliminate the ambiguity.
+                    // tslint:disable-next-line:function-constructor
+                    j = new Function("return (" + text + ")")();
+                    // in the optional fourth stage, we recursively walk the new structure, passing
+                    // each name/value pair to a reviver function for possible transformation.
+                    return typeof reviver === "function" ? walk({ "": j }, "") : j;
+                }
+                // if the text is not JSON parseable, then a SyntaxError is thrown.
+                throw new SyntaxError("JSON.parse");
+            };
+        }
+    })();
+
+    });
+
+    var json = createCommonjsModule(function (module, exports) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+
+    window.JSON = window.JSON || json2.JSON;
+
+    });
+
+    // ES5 15.2.3.9
+    // http://es5.github.com/#x15.2.3.9
+    if (!Object.freeze) {
+        Object.freeze = function (object) {
+            if (Object(object) !== object) {
+                throw new TypeError("Object.freeze can only be called on Objects.");
+            }
+            // this is misleading and breaks feature-detection, but
+            // allows "securable" code to "gracefully" degrade to working
+            // but insecure code.
+            return object;
+        };
+    }
+    // detect a Rhino bug and patch it
+    try {
+        Object.freeze(function () { return undefined; });
+    }
+    catch (exception) {
+        Object.freeze = (function (freezeObject) {
+            return function (object) {
+                if (typeof object === "function") {
+                    return object;
+                }
+                else {
+                    return freezeObject(object);
+                }
+            };
+        })(Object.freeze);
+    }
+
+    if (!Object.prototype.hasOwnProperty) {
+        Object.prototype.hasOwnProperty = function (prop) {
+            return typeof this[prop] !== "undefined";
+        };
+    }
+    if (!Object.getOwnPropertyNames) {
+        Object.getOwnPropertyNames = function (obj) {
+            var keys = [];
+            for (var key in obj) {
+                if (typeof obj.hasOwnProperty !== "undefined" &&
+                    obj.hasOwnProperty(key)) {
+                    keys.push(key);
+                }
+            }
+            return keys;
+        };
+    }
+
+    // Source: https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/prepend
+    (function (arr) {
+        arr.forEach(function (item) {
+            if (item.hasOwnProperty('prepend')) {
+                return;
+            }
+            Object.defineProperty(item, 'prepend', {
+                configurable: true,
+                enumerable: true,
+                writable: true,
+                value: function prepend() {
+                    var argArr = Array.prototype.slice.call(arguments);
+                    var docFrag = document.createDocumentFragment();
+                    argArr.forEach(function (argItem) {
+                        var isNode = argItem instanceof Node;
+                        docFrag.appendChild(isNode ? argItem : document.createTextNode(String(argItem)));
+                    });
+                    this.insertBefore(docFrag, this.firstChild);
+                }
+            });
+        });
+    })([Element.prototype, Document.prototype, DocumentFragment.prototype]);
+
+    /**
+     * @this {Promise}
+     */
+    function finallyConstructor(callback) {
+      var constructor = this.constructor;
+      return this.then(
+        function(value) {
+          // @ts-ignore
+          return constructor.resolve(callback()).then(function() {
+            return value;
+          });
+        },
+        function(reason) {
+          // @ts-ignore
+          return constructor.resolve(callback()).then(function() {
+            // @ts-ignore
+            return constructor.reject(reason);
+          });
+        }
+      );
+    }
+
+    function allSettled(arr) {
+      var P = this;
+      return new P(function(resolve, reject) {
+        if (!(arr && typeof arr.length !== 'undefined')) {
+          return reject(
+            new TypeError(
+              typeof arr +
+                ' ' +
+                arr +
+                ' is not iterable(cannot read property Symbol(Symbol.iterator))'
+            )
+          );
+        }
+        var args = Array.prototype.slice.call(arr);
+        if (args.length === 0) return resolve([]);
+        var remaining = args.length;
+
+        function res(i, val) {
+          if (val && (typeof val === 'object' || typeof val === 'function')) {
+            var then = val.then;
+            if (typeof then === 'function') {
+              then.call(
+                val,
+                function(val) {
+                  res(i, val);
+                },
+                function(e) {
+                  args[i] = { status: 'rejected', reason: e };
+                  if (--remaining === 0) {
+                    resolve(args);
+                  }
+                }
+              );
+              return;
+            }
+          }
+          args[i] = { status: 'fulfilled', value: val };
+          if (--remaining === 0) {
+            resolve(args);
+          }
+        }
+
+        for (var i = 0; i < args.length; i++) {
+          res(i, args[i]);
+        }
+      });
+    }
+
+    // Store setTimeout reference so promise-polyfill will be unaffected by
+    // other code modifying setTimeout (like sinon.useFakeTimers())
+    var setTimeoutFunc = setTimeout;
+
+    function isArray(x) {
+      return Boolean(x && typeof x.length !== 'undefined');
+    }
+
+    function noop() {}
+
+    // Polyfill for Function.prototype.bind
+    function bind(fn, thisArg) {
+      return function() {
+        fn.apply(thisArg, arguments);
+      };
+    }
+
+    /**
+     * @constructor
+     * @param {Function} fn
+     */
+    function Promise$1(fn) {
+      if (!(this instanceof Promise$1))
+        throw new TypeError('Promises must be constructed via new');
+      if (typeof fn !== 'function') throw new TypeError('not a function');
+      /** @type {!number} */
+      this._state = 0;
+      /** @type {!boolean} */
+      this._handled = false;
+      /** @type {Promise|undefined} */
+      this._value = undefined;
+      /** @type {!Array<!Function>} */
+      this._deferreds = [];
+
+      doResolve(fn, this);
+    }
+
+    function handle(self, deferred) {
+      while (self._state === 3) {
+        self = self._value;
+      }
+      if (self._state === 0) {
+        self._deferreds.push(deferred);
+        return;
+      }
+      self._handled = true;
+      Promise$1._immediateFn(function() {
+        var cb = self._state === 1 ? deferred.onFulfilled : deferred.onRejected;
+        if (cb === null) {
+          (self._state === 1 ? resolve : reject)(deferred.promise, self._value);
+          return;
+        }
+        var ret;
+        try {
+          ret = cb(self._value);
+        } catch (e) {
+          reject(deferred.promise, e);
+          return;
+        }
+        resolve(deferred.promise, ret);
+      });
+    }
+
+    function resolve(self, newValue) {
+      try {
+        // Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+        if (newValue === self)
+          throw new TypeError('A promise cannot be resolved with itself.');
+        if (
+          newValue &&
+          (typeof newValue === 'object' || typeof newValue === 'function')
+        ) {
+          var then = newValue.then;
+          if (newValue instanceof Promise$1) {
+            self._state = 3;
+            self._value = newValue;
+            finale(self);
+            return;
+          } else if (typeof then === 'function') {
+            doResolve(bind(then, newValue), self);
+            return;
+          }
+        }
+        self._state = 1;
+        self._value = newValue;
+        finale(self);
+      } catch (e) {
+        reject(self, e);
+      }
+    }
+
+    function reject(self, newValue) {
+      self._state = 2;
+      self._value = newValue;
+      finale(self);
+    }
+
+    function finale(self) {
+      if (self._state === 2 && self._deferreds.length === 0) {
+        Promise$1._immediateFn(function() {
+          if (!self._handled) {
+            Promise$1._unhandledRejectionFn(self._value);
+          }
+        });
+      }
+
+      for (var i = 0, len = self._deferreds.length; i < len; i++) {
+        handle(self, self._deferreds[i]);
+      }
+      self._deferreds = null;
+    }
+
+    /**
+     * @constructor
+     */
+    function Handler(onFulfilled, onRejected, promise) {
+      this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+      this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+      this.promise = promise;
+    }
+
+    /**
+     * Take a potentially misbehaving resolver function and make sure
+     * onFulfilled and onRejected are only called once.
+     *
+     * Makes no guarantees about asynchrony.
+     */
+    function doResolve(fn, self) {
+      var done = false;
+      try {
+        fn(
+          function(value) {
+            if (done) return;
+            done = true;
+            resolve(self, value);
+          },
+          function(reason) {
+            if (done) return;
+            done = true;
+            reject(self, reason);
+          }
+        );
+      } catch (ex) {
+        if (done) return;
+        done = true;
+        reject(self, ex);
+      }
+    }
+
+    Promise$1.prototype['catch'] = function(onRejected) {
+      return this.then(null, onRejected);
+    };
+
+    Promise$1.prototype.then = function(onFulfilled, onRejected) {
+      // @ts-ignore
+      var prom = new this.constructor(noop);
+
+      handle(this, new Handler(onFulfilled, onRejected, prom));
+      return prom;
+    };
+
+    Promise$1.prototype['finally'] = finallyConstructor;
+
+    Promise$1.all = function(arr) {
+      return new Promise$1(function(resolve, reject) {
+        if (!isArray(arr)) {
+          return reject(new TypeError('Promise.all accepts an array'));
+        }
+
+        var args = Array.prototype.slice.call(arr);
+        if (args.length === 0) return resolve([]);
+        var remaining = args.length;
+
+        function res(i, val) {
+          try {
+            if (val && (typeof val === 'object' || typeof val === 'function')) {
+              var then = val.then;
+              if (typeof then === 'function') {
+                then.call(
+                  val,
+                  function(val) {
+                    res(i, val);
+                  },
+                  reject
+                );
+                return;
+              }
+            }
+            args[i] = val;
+            if (--remaining === 0) {
+              resolve(args);
+            }
+          } catch (ex) {
+            reject(ex);
+          }
+        }
+
+        for (var i = 0; i < args.length; i++) {
+          res(i, args[i]);
+        }
+      });
+    };
+
+    Promise$1.allSettled = allSettled;
+
+    Promise$1.resolve = function(value) {
+      if (value && typeof value === 'object' && value.constructor === Promise$1) {
+        return value;
+      }
+
+      return new Promise$1(function(resolve) {
+        resolve(value);
+      });
+    };
+
+    Promise$1.reject = function(value) {
+      return new Promise$1(function(resolve, reject) {
+        reject(value);
+      });
+    };
+
+    Promise$1.race = function(arr) {
+      return new Promise$1(function(resolve, reject) {
+        if (!isArray(arr)) {
+          return reject(new TypeError('Promise.race accepts an array'));
+        }
+
+        for (var i = 0, len = arr.length; i < len; i++) {
+          Promise$1.resolve(arr[i]).then(resolve, reject);
+        }
+      });
+    };
+
+    // Use polyfill for setImmediate for performance gains
+    Promise$1._immediateFn =
+      // @ts-ignore
+      (typeof setImmediate === 'function' &&
+        function(fn) {
+          // @ts-ignore
+          setImmediate(fn);
+        }) ||
+      function(fn) {
+        setTimeoutFunc(fn, 0);
+      };
+
+    Promise$1._unhandledRejectionFn = function _unhandledRejectionFn(err) {
+      if (typeof console !== 'undefined' && console) {
+        console.warn('Possible Unhandled Promise Rejection:', err); // eslint-disable-line no-console
+      }
+    };
+
+    var src = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        'default': Promise$1
+    });
+
+    var Promise$2 = /*@__PURE__*/getAugmentedNamespace(src);
+
+    var promise = createCommonjsModule(function (module, exports) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+
+    window.Promise =
+        window.Promise || Promise$2.default || Promise$2;
+
+    });
+
+    if (!String.prototype.repeat) {
+        String.prototype.repeat = function (length) {
+            var result = "";
+            for (var i = 0; i < length; i++) {
+                result += this;
+            }
+            return result;
+        };
+    }
+
+    var polyfills = createCommonjsModule(function (module, exports) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+
+
+
+
+    });
+
     (function (AuthenticationSource) {
         AuthenticationSource["Browser"] = "BROWSER";
         AuthenticationSource["MobileSDK"] = "MOBILE_SDK";
@@ -678,7 +1768,7 @@ this.GlobalPayments.ThreeDSecure = (function (exports) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!data.challengeMandated) return [3 /*break*/, 2];
+                        if (!(data.challengeMandated || data.status === exports.TransactionStatus.ChallengeRequired)) return [3 /*break*/, 2];
                         data.challenge = data.challenge || {};
                         if (!data.challenge.requestUrl) {
                             throw new Error("Invalid challenge state. Missing challenge URL");
