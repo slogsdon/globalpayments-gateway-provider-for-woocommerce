@@ -119,10 +119,10 @@ class GpApiGateway extends AbstractGateway {
 		 * The WooCommerce API allows plugins make a callback to a special URL that will then load the specified class (if it exists)
 		 * and run an action. This is also useful for gateways that are not initialized.
 		 */
-		add_action( 'woocommerce_api_threedsecure_checkenrollment', array( $this, 'process_threeDSecure_checkEnrollment' ) );
-		add_action( 'woocommerce_api_threedsecure_methodnotification', array( $this, 'process_threeDSecure_methodNotification' ) );
-		add_action( 'woocommerce_api_threedsecure_initiateauthentication', array( $this, 'process_threeDSecure_initiateAuthentication' ) );
-		add_action( 'woocommerce_api_threedsecure_challengenotification', array( $this, 'process_threeDSecure_challengeNotification' ) );
+		add_action( 'woocommerce_api_globalpayments_threedsecure_checkenrollment', array( $this, 'process_threeDSecure_checkEnrollment' ) );
+		add_action( 'woocommerce_api_globalpayments_threedsecure_methodnotification', array( $this, 'process_threeDSecure_methodNotification' ) );
+		add_action( 'woocommerce_api_globalpayments_threedsecure_initiateauthentication', array( $this, 'process_threeDSecure_initiateAuthentication' ) );
+		add_action( 'woocommerce_api_globalpayments_threedsecure_challengenotification', array( $this, 'process_threeDSecure_challengeNotification' ) );
 	}
 
 	public function mapResponseCodeToFriendlyMessage( $responseCode ) {
