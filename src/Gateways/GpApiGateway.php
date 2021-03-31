@@ -100,8 +100,8 @@ class GpApiGateway extends AbstractGateway {
 			'AppKey'                   => $this->app_key,
 			'developerId'              => '',
 			'environment'              => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
-			'methodNotificationUrl'    => $this->get_api_url('threedsecure_methodnotification'),
-			'challengeNotificationUrl' => $this->get_api_url('threedsecure_challengenotification'),
+			'methodNotificationUrl'    => $this->get_api_url('globalpayments_threedsecure_methodnotification'),
+			'challengeNotificationUrl' => $this->get_api_url('globalpayments_threedsecure_challengenotification'),
 		);
 	}
 
