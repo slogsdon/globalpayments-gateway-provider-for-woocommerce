@@ -1665,6 +1665,9 @@ this.GlobalPayments.ThreeDSecure = (function (exports) {
                         return [4 /*yield*/, makeRequest(endpoint, data)];
                     case 2:
                         response = (_a.sent());
+                        if (response.version === "ONE") {
+                            return [4 /*yield*/, handle3ds1VersionCheck(response, data.challengeWindow)];
+                        }
                         return [4 /*yield*/, handle3dsVersionCheck(response, data.methodWindow)];
                     case 3: return [2 /*return*/, _a.sent()];
                     case 4:
@@ -1747,6 +1750,42 @@ this.GlobalPayments.ThreeDSecure = (function (exports) {
                         return [4 /*yield*/, postToIframe(data.methodUrl, [{ name: "threeDSMethodData", value: data.methodData }], options)];
                     case 1:
                         _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, data];
+                }
+            });
+        });
+    }
+    /**
+     * Handles response from merchant integration endpoint for the version check request. When a card is enrolled in 3DS1, a
+     * challenge is mandated and an iframe will be created for the issuer's necessary challenge URL.
+     *
+     * @param data Version check data from merchant integration endpoint
+     * @param options Configuration options for the challenge window
+     * @throws When a card is not enrolled
+     */
+    function handle3ds1VersionCheck(data, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(data.challengeMandated || data.status === exports.TransactionStatus.ChallengeRequired)) return [3 /*break*/, 2];
+                        data.challenge = data.challenge || {};
+                        if (!data.challenge.requestUrl) {
+                            throw new Error("Invalid challenge state. Missing challenge URL");
+                        }
+                        return [4 /*yield*/, postToIframe(
+                            data.challenge.requestUrl,
+                            [
+                                { name: "TermUrl", value: data.TermUrl },
+                                { name: "MD", value: data.serverTransactionId },
+                                { name: "PaReq", value: data.challenge.encodedChallengeRequest },
+                            ],
+                            options)];
+                    case 1:
+                        response = _a.sent();
+                        data.challenge.response = response;
                         _a.label = 2;
                     case 2: return [2 /*return*/, data];
                 }
