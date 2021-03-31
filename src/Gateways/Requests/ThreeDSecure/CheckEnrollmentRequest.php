@@ -2,6 +2,7 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\ThreeDSecure;
 
+use GlobalPayments\Api\Entities\Enums\Secure3dVersion;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\Services\Secure3dService;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
@@ -10,9 +11,10 @@ use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Requests\AbstractR
 defined('ABSPATH') || exit;
 
 class CheckEnrollmentRequest extends AbstractRequest {
+	const ENROLLED     = 'ENROLLED';
 	const NOT_ENROLLED = 'NOT_ENROLLED';
 
-	const NO_RESPONSE = 'NO_RESPONSE';
+	const NO_RESPONSE  = 'NO_RESPONSE';
 
 	public function get_transaction_type() {
 		return AbstractGateway::TXN_TYPE_CHECK_ENROLLMENT;
@@ -44,8 +46,24 @@ class CheckEnrollmentRequest extends AbstractRequest {
 			$response["enrolled"] = $threeDSecureData->enrolled ?? self::NOT_ENROLLED;
 			$response['version'] = $threeDSecureData->getVersion();
 			$response["serverTransactionId"] = $threeDSecureData->serverTransactionId ?? '';
-			$response["methodUrl"] = $threeDSecureData->issuerAcsUrl ?? '';
-			$response['methodData'] = $threeDSecureData->payerAuthenticationRequest ?? '';
+			if ( self::ENROLLED !== $threeDSecureData->enrolled ) {
+				wp_send_json( $response );
+			}
+
+			if ( Secure3dVersion::TWO === $threeDSecureData->getVersion() ) {
+				$response["methodUrl"] = $threeDSecureData->issuerAcsUrl ?? '';
+				$response['methodData'] = $threeDSecureData->payerAuthenticationRequest ?? '';
+
+				wp_send_json($response);
+			}
+
+			if ( Secure3dVersion::ONE === $threeDSecureData->getVersion() ) {
+				$response['TermUrl']                              = $threeDSecureData->challengeReturnUrl;
+				$response["status"]                               = $threeDSecureData->status;
+				$response["challengeMandated"]                    = $threeDSecureData->challengeMandated;
+				$response["challenge"]["requestUrl"]              = $threeDSecureData->issuerAcsUrl;
+				$response["challenge"]["encodedChallengeRequest"] = $threeDSecureData->payerAuthenticationRequest;
+			}
 		} catch (\Exception $e) {
 			$response = [
 				'error'    => true,

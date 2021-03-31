@@ -260,7 +260,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		// Global Payments scripts for handling client-side tokenization
 		wp_enqueue_script(
 			'globalpayments-secure-payment-fields-lib',
-			'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.6.0/globalpayments'
+			'https://js.globalpay.com/v1/globalpayments'
 			. ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js',
 			array(),
 			WC()->version,

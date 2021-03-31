@@ -285,6 +285,7 @@ class SdkClient implements ClientInterface {
 	protected function set_threedsecure_data() {
 		$threeDSecureData = Secure3dService::getAuthenticationData()
 			->withServerTransactionId( $this->get_arg( RequestArg::SERVER_TRANS_ID ) )
+			->withPayerAuthenticationResponse( $this->get_arg( RequestArg::PARES ) )
 			->execute();
 
 		if ( ! in_array( $threeDSecureData->eci, ["01", "02", "05", "06"] ) ) {

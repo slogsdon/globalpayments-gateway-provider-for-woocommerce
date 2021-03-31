@@ -186,12 +186,18 @@ EOT;
 		try {
 			$response = new \stdClass();
 
-			$convertedCRes = json_decode(base64_decode($_POST['cres']));
+			if ( isset( $_POST['cres'] ) ) {
+				$convertedCRes = json_decode( base64_decode( $_POST['cres'] ) );
 
-			$response = json_encode([
-				'threeDSServerTransID' => $convertedCRes->threeDSServerTransID,
-				'transStatus'          => $convertedCRes->transStatus ?? '',
-			]);
+				$response = json_encode([
+					'threeDSServerTransID' => $convertedCRes->threeDSServerTransID,
+					'transStatus'          => $convertedCRes->transStatus ?? '',
+				]);
+			}
+
+			if ( isset( $_POST['PaRes'] ) ) {
+				$response = json_encode( [ 'PaRes' => $_POST['PaRes'] ], JSON_UNESCAPED_SLASHES );
+			}
 
 			$globalpayments_threedsecure_lib = Plugin::get_url( '/assets/frontend/js/globalpayments-3ds.js' );
 			$script =  <<<EOT

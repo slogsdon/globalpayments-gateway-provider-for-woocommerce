@@ -326,6 +326,11 @@
 						wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
 						amount: this.order.amount,
 						currency: this.order.currency,
+						challengeWindow: {
+							windowSize: ChallengeWindowSize.Windowed500x600,
+							displayMode: 'lightbox',
+							hide: false,
+						},
 					});
 
 					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
@@ -342,6 +347,13 @@
 				} catch ( e ) {
 					console.error( e.reasons );
 					this.showPaymentError( e.reasons[0].message );
+					return;
+				}
+
+				if ( "ONE" === versionCheckData.version ) {
+					this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
+					this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
+					$( this.getForm() ).submit();
 					return;
 				}
 
