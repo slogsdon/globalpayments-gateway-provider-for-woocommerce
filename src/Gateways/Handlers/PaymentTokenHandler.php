@@ -10,6 +10,6 @@ class PaymentTokenHandler extends AbstractHandler {
 			return;
 		}
 
-		( new PaymentTokenData( $this->request ) )->save_new_token( $this->response->token );
+		( new PaymentTokenData( $this->request ) )->save_new_token( $this->response->token, $this->response->cardBrandTransactionId );
 	}
 }

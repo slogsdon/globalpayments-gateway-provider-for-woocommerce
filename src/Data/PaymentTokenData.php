@@ -27,6 +27,13 @@ class PaymentTokenData {
 	protected $request;
 
 	/**
+	 * Used w/TransIT gateway
+	 *
+	 * @var string
+	 */
+	public static $tsepCvv = null;
+
+	/**
 	 * Standardize getting single- and multi-use token data
 	 *
 	 * @param RequestInterface $request
@@ -47,23 +54,31 @@ class PaymentTokenData {
 		return $token;
 	}
 
-	public function save_new_token( $multi_use_token ) {
+	public function save_new_token( $multi_use_token, $card_brand_txn_id = null ) {
 		$user_id        = get_current_user_id();
 		$current_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, $this->request->gateway_id );
 
-		// a card number should only have a single token stored
-		foreach ( $current_tokens as $t ) {
-			if ( $t->get_token() === $multi_use_token ) {
-				$t->delete( true );
-			}
-		}
-
 		$token = $this->get_single_use_token();
-		$token->set_token( $multi_use_token );
-		$token->set_user_id( $user_id );
-		$token->set_gateway_id( $this->request->gateway_id );
-		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
-		$token->save();
+
+		if ( !empty( $token ) ) {
+			// a card number should only have a single token stored
+			foreach ( $current_tokens as $t ) {
+				if ( $t->get_token() === $multi_use_token ) {
+					$t->delete( true );
+				}
+			}
+
+			if ( ! $token->get_meta( self::KEY_SHOULD_SAVE_TOKEN, true ) ) {
+				return;
+			}
+
+			$token->set_token( $multi_use_token );
+			$token->add_meta_data( 'card_brand_txn_id', $card_brand_txn_id );
+			$token->set_user_id( $user_id );
+			$token->set_gateway_id( $this->request->gateway_id );
+			$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, false, true );
+			$token->save();
+		}
 	}
 
 	public function get_single_use_token() {
@@ -71,9 +86,19 @@ class PaymentTokenData {
 			return null;
 		}
 
-		$gateway = $this->request->get_request_data( 'payment_method' );
-		$data    = json_decode( stripslashes( $this->request->get_request_data( $gateway )['token_response'] ) );
-		$token   = new WC_Payment_Token_CC();
+		$gateway      = $this->request->get_request_data( 'payment_method' );
+		$request_data = $this->request->get_request_data( $gateway );
+		if ( ! isset( $request_data['token_response'] ) ) {
+		    return null;
+		}
+
+		$data = json_decode( stripslashes( $request_data['token_response'] ) );
+
+		if ( empty( $data ) ) {
+			return null;
+		}
+
+		$token = new WC_Payment_Token_CC();
 
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName
 		$token->add_meta_data( self::KEY_SHOULD_SAVE_TOKEN, $this->get_should_save_for_later(), true );
@@ -90,6 +115,8 @@ class PaymentTokenData {
 		if ( isset( $data->details->expiryMonth ) ) {
 			$token->set_expiry_month( $data->details->expiryMonth );
 		}
+
+		static::$tsepCvv = isset( $data->details->cardSecurityCode ) ? $data->details->cardSecurityCode : null;
 
 		if ( isset( $data->details->cardType ) && isset( $this->card_type_map[ $data->details->cardType ] ) ) {
 			$token->set_card_type( $this->card_type_map[ $data->details->cardType ] );

@@ -4,12 +4,21 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Clients;
 
 use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
+use GlobalPayments\Api\Entities\Enums\GpApi\Channels;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
+use GlobalPayments\Api\Entities\Enums\CardType;
+use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\Api\Entities\Enums\StoredCredentialInitiator;
+use GlobalPayments\Api\Entities\StoredCredential;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
+use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\GeniusConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\GpApiConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
+use GlobalPayments\Api\ServiceConfigs\Gateways\TransitConfig;
 use GlobalPayments\Api\Services\ReportingService;
-use GlobalPayments\Api\ServicesConfig;
 use GlobalPayments\Api\ServicesContainer;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\AbstractGateway;
@@ -44,6 +53,7 @@ class SdkClient implements ClientInterface {
 	protected $client_transactions = array(
 		AbstractGateway::TXN_TYPE_CREATE_TRANSACTION_KEY,
 		AbstractGateway::TXN_TYPE_CREATE_MANIFEST,
+		AbstractGateway::TXN_TYPE_GET_ACCESS_TOKEN,
 	);
 
 	protected $refund_transactions = array(
@@ -72,13 +82,13 @@ class SdkClient implements ClientInterface {
 			$request->get_args()
 		);
 		$this->prepare_request_objects();
+
 		return $this;
 	}
 
 	public function execute() {
 		$this->configure_sdk();
 		$builder = $this->get_transaction_builder();
-
 		if ( 'transactionDetail' === $this->args['TXN_TYPE'] ) {
 			return $builder->execute();
 		}
@@ -89,8 +99,7 @@ class SdkClient implements ClientInterface {
 
 		$this->prepare_builder( $builder );
 		$response = $builder->execute();
-
-		if ( $response instanceof Transaction && $response->token ) {
+		if ( ! is_null( $this->card_data ) && $response instanceof Transaction && $response->token ) {
 			$this->card_data->token = $response->token;
 			$this->card_data->updateTokenExpiry();
 		}
@@ -117,7 +126,7 @@ class SdkClient implements ClientInterface {
 	 */
 	protected function get_transaction_builder() {
 		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
-			return ServicesContainer::instance()->getClient();
+			return ServicesContainer::instance()->getClient( 'default' ); // this value should always be safe here
 		}
 
 		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'transactionDetail' ) {
@@ -125,6 +134,11 @@ class SdkClient implements ClientInterface {
 		}
 
 		if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->refund_transactions, true ) ) {
+			$subject = Transaction::fromId( $this->get_arg( 'GATEWAY_ID' ) );
+			return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
+		}
+
+		if ( $this->get_arg( RequestArg::TXN_TYPE ) === 'capture' ) {
 			$subject = Transaction::fromId( $this->get_arg( 'GATEWAY_ID' ) );
 			return $subject->{$this->get_arg( RequestArg::TXN_TYPE )}();
 		}
@@ -144,6 +158,7 @@ class SdkClient implements ClientInterface {
 			$this->builder_args['currency'] = array( $this->get_arg( RequestArg::CURRENCY ) );
 		}
 
+		$token = null;
 		if ( $this->has_arg( RequestArg::CARD_DATA ) ) {
 			/**
 			 * Get the request's single- or multi-use token
@@ -177,6 +192,18 @@ class SdkClient implements ClientInterface {
 		if ( $this->has_arg( RequestArg::AUTH_AMOUNT ) ) {
 			$this->builder_args['authAmount'] = array( $this->get_arg( RequestArg::AUTH_AMOUNT ) );
 		}
+
+		if ( $token !== null && !empty( $token->get_meta( 'card_brand_txn_id' ) ) ) {
+			$this->prepare_stored_credential_data( $token->get_meta( 'card_brand_txn_id' ) );
+		}
+	}
+
+	protected function prepare_stored_credential_data( $card_brand_txn_id ) {
+		$storedCredsDetails = new StoredCredential();
+		$storedCredsDetails->initiator = StoredCredentialInitiator::CARDHOLDER;
+		$storedCredsDetails->cardBrandTransactionId = $card_brand_txn_id;
+		
+		return $storedCredsDetails;
 	}
 
 	protected function prepare_card_data( WC_Payment_Token_CC $token = null ) {
@@ -188,6 +215,48 @@ class SdkClient implements ClientInterface {
 		$this->card_data->token    = $token->get_token();
 		$this->card_data->expMonth = $token->get_expiry_month();
 		$this->card_data->expYear  = $token->get_expiry_year();
+
+		/**
+		 * $token->get_card_type() will return one of:
+		 * "visa"
+		 * "mastercard"
+		 * "american express"
+		 * "discover"
+		 * "diners"
+		 * "jcb"
+		 */
+
+		/**
+		 * Defaulting to Discover since it's currently the only card type not
+		 * returned by JS library in the case of Discover CUP cards.
+		 */		
+		$this->card_data->cardType = CardType::DISCOVER;
+
+		// map for use with GlobalPayments SDK
+		switch( $token->get_card_type() ) {
+			case "visa":
+				$this->card_data->cardType = CardType::VISA;
+				break;
+			case "mastercard":
+				$this->card_data->cardType = CardType::MASTERCARD;
+				break;
+			case "american express":
+				$this->card_data->cardType = CardType::AMEX;
+				break;
+			case "discover":
+				$this->card_data->cardType = CardType::DISCOVER;
+				break;
+			case "diners":
+				$this->card_data->cardType = CardType::DINERS;
+				break;
+			case "jcb":
+				$this->card_data->cardType = CardType::JCB;
+				break;
+		}
+
+		if ( isset( PaymentTokenData::$tsepCvv ) ) {
+			$this->card_data->cvn = PaymentTokenData::$tsepCvv;
+		}
 	}
 
 	protected function prepare_address( $address_type, array $data ) {
@@ -207,11 +276,41 @@ class SdkClient implements ClientInterface {
 	}
 
 	protected function configure_sdk() {
+		switch ( $this->args['SERVICES_CONFIG']['gatewayProvider'] ) {
+			case GatewayProvider::PORTICO:
+				$gatewayConfig = new PorticoConfig();
+				break;
+			case GatewayProvider::TRANSIT:
+				$gatewayConfig = new TransitConfig();
+				$gatewayConfig->acceptorConfig = new AcceptorConfig(); // defaults should work here
+				break;
+			case GatewayProvider::GENIUS:
+				$gatewayConfig = new GeniusConfig();
+				break;
+			case GatewayProvider::GP_API:
+				$gatewayConfig = new GpApiConfig();
+				$servicesConfig = $this->args[ RequestArg::SERVICES_CONFIG ];
+				$gatewayConfig->setAppId( $servicesConfig['AppId'] );
+				$gatewayConfig->setAppKey( $servicesConfig['AppKey'] );
+				$gatewayConfig->setChannel( Channels::CardNotPresent );
+
+				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
+				break;
+		}
+
 		$config = $this->set_object_data(
-			new ServicesConfig(),
+			$gatewayConfig,
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
-		ServicesContainer::configure( $config );
+
+		if (
+			$this->args['SERVICES_CONFIG']['gatewayProvider'] === GatewayProvider::TRANSIT &&
+			$this->get_arg( RequestArg::TXN_TYPE ) === AbstractGateway::TXN_TYPE_CREATE_MANIFEST
+		) {
+			$config->deviceId = $this->args[ RequestArg::SERVICES_CONFIG ]['tsepDeviceId'];
+		}
+
+		ServicesContainer::configureService( $config );
 	}
 
 	protected function set_object_data( $obj, array $data ) {

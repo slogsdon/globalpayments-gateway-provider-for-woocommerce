@@ -2,6 +2,7 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
+use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 
 defined( 'ABSPATH' ) || exit;
@@ -89,7 +90,7 @@ class GeniusGateway extends AbstractGateway {
 	public function get_frontend_gateway_options() {
 		return array(
 			'webApiKey' => $this->web_api_key,
-			'env'       => $this->is_production ? 'production' : 'sandbox',
+			'env'       => $this->is_production ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
 		);
 	}
 
@@ -98,7 +99,7 @@ class GeniusGateway extends AbstractGateway {
 			'merchantName'   => $this->merchant_name,
 			'merchantSiteId' => $this->merchant_site_id,
 			'merchantKey'    => $this->merchant_key,
-			'environment'    => $this->is_production ? 'PRODUCTION' : 'TEST',
+			'environment'    => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
 		);
 	}
 }

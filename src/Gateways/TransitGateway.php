@@ -2,7 +2,9 @@
 
 namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
+use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -38,6 +40,13 @@ class TransitGateway extends AbstractGateway {
 	 * @var string
 	 */
 	public $device_id;
+
+	/**
+	 * Device ID for TSEP entity specifically
+	 *
+	 * @var string
+	 */
+	public $tsep_device_id;
 
 	/**
 	 * Merchant location's Transaction Key
@@ -103,6 +112,12 @@ class TransitGateway extends AbstractGateway {
 				'description' => __( 'Get your API keys from your TSYS TransIT account.', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'default'     => '',
 			),
+			'tsep_device_id'       => array(
+				'title'       => __( 'TSEP Device ID', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'type'        => 'text',
+				'description' => __( 'Get your API keys from your TSYS TransIT account.', 'globalpayments-gateway-provider-for-woocommerce' ),
+				'default'     => '',
+			),
 			'transaction_key' => array(
 				'title'       => __( 'Transaction Key', 'globalpayments-gateway-provider-for-woocommerce' ),
 				'type'        => 'text',
@@ -146,9 +161,9 @@ class TransitGateway extends AbstractGateway {
 
 	public function get_frontend_gateway_options() {
 		return array(
-			'deviceId' => $this->device_id,
+			'deviceId' => $this->tsep_device_id,
 			'manifest' => $this->create_manifest(),
-			'env'      => $this->is_production ? 'production' : 'sandbox',
+			'env'      => $this->is_production ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
 		);
 	}
 
@@ -158,9 +173,10 @@ class TransitGateway extends AbstractGateway {
 			'username'       => $this->user_id, // only needed to create transation key
 			'password'       => $this->password, // only needed to create transation key
 			'transactionKey' => $this->transaction_key,
+			'tsepDeviceId'	 => $this->tsep_device_id,
 			'deviceId'       => $this->device_id,
-			'developerId'    => $this->developer_id,
-			'environment'    => $this->is_production ? 'PRODUCTION' : 'TEST',
+			'developerId'    => '003226G004', // provided during certification
+			'environment'    => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
 		);
 	}
 
@@ -175,5 +191,24 @@ class TransitGateway extends AbstractGateway {
 		$request  = $this->prepare_request( self::TXN_TYPE_CREATE_MANIFEST );
 		$response = $this->submit_request( $request );
 		return $response;
+	}
+
+	/**
+	 * Handle online refund requests via WP Admin > WooCommerce > Edit Order
+	 *
+	 * @param int $order_id
+	 * @param null|number $amount
+	 * @param string $reason
+	 *
+	 * @return array
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		$txn_type 		= self::TXN_TYPE_REFUND;
+		$order			= new WC_Order( $order_id );
+		$request		= $this->prepare_request( $txn_type, $order );
+		$response		= $this->submit_request( $request );
+		$is_successful	= $this->handle_response( $request, $response );
+
+		return $is_successful;
 	}
 }

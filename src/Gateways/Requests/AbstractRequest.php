@@ -72,6 +72,10 @@ abstract class AbstractRequest implements RequestInterface {
 			return $_POST;
 		}
 
+		if ( ! isset( $this->data[ $key ] ) ) {
+			return null;
+		}
+
 		return wc_clean( $this->data[ $key ] );
 	}
 }

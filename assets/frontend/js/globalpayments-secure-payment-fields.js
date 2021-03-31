@@ -12,6 +12,14 @@
 	 * @param {object} options
 	 */
 	function GlobalPaymentsWooCommerce(options) {
+
+		/**
+		 * Card form instance
+		 *
+		 * @type {any}
+		 */
+		this.cardForm = {};
+
 		/**
 		 * Payment gateway id
 		 *
@@ -101,6 +109,10 @@
 		 * @returns
 		 */
 		renderPaymentFields: function () {
+			if ( $( '#' + this.id + '-' + this.fieldOptions['card-number-field'].class ).children().length > 0 ) {
+				return;
+			}
+
 			if ( ! GlobalPayments.configure ) {
 				console.log( 'Warning! Payment fields cannot be loaded' );
 				return;
@@ -114,18 +126,23 @@
 
 			GlobalPayments.configure( this.gatewayOptions );
 
-			var cardForm = GlobalPayments.ui.form(
+			this.cardForm = GlobalPayments.ui.form(
 				{
 					fields: this.getFieldConfiguration(),
 					styles: this.getStyleConfiguration()
 				}
 			);
 
-			cardForm.on( 'submit', 'click', this.blockOnSubmit.bind( this ) );
-			cardForm.on( 'token-success', this.handleResponse.bind( this ) );
-			cardForm.on( 'token-error', this.handleErrors.bind( this ) );
-			cardForm.on( 'error', this.handleErrors.bind( this ) );
+			this.cardForm.on( 'submit', 'click', this.blockOnSubmit.bind( this ) );
+			this.cardForm.on( 'token-success', this.handleResponse.bind( this ) );
+			this.cardForm.on( 'token-error', this.handleErrors.bind( this ) );
+			this.cardForm.on( 'error', this.handleErrors.bind( this ) );
 			GlobalPayments.on( 'error', this.handleErrors.bind( this ) );
+
+			// match the visibility of our payment form
+			this.cardForm.ready( function () {
+				this.toggleSubmitButtons();
+			} );
 		},
 
 		/**
@@ -138,7 +155,7 @@
 			el.id        = this.getSubmitButtonTargetSelector().replace( '#', '' );
 			el.className = 'globalpayments ' + this.id + ' card-submit';
 			$( this.getPlaceOrderButtonSelector() ).after( el );
-			// match the visibilit of our payment form
+			// match the visibility of our payment form
 			this.toggleSubmitButtons();
 		},
 
@@ -150,7 +167,7 @@
 		 */
 		toggleSubmitButtons: function () {
 			var paymentGatewaySelected = $( this.getPaymentMethodRadioSelector() ).is( ':checked' );
-			var savedCardsAvailable    = $( this.getStoredPaymentMethodsRadioSelector() ).length > 0;
+			var savedCardsAvailable    = $( this.getStoredPaymentMethodsRadioSelector() + '[value!="new"]' ).length > 0;
 			var newSavedCardSelected   = 'new' === $( this.getStoredPaymentMethodsRadioSelector() + ':checked' ).val();
 
 			var shouldBeVisible = (paymentGatewaySelected && ! savedCardsAvailable) || (savedCardsAvailable && newSavedCardSelected);
@@ -181,23 +198,38 @@
 				return;
 			}
 
-			var tokenResponseElement =
-				/**
-				 * Get hidden
-				 *
-				 * @type {HTMLInputElement}
-				 */
-				(document.getElementById( this.id + '-token_response' ));
-			if ( ! tokenResponseElement) {
-				tokenResponseElement      = document.createElement( 'input' );
-				tokenResponseElement.id   = this.id + '-token_response';
-				tokenResponseElement.name = this.id + '[token_response]';
-				tokenResponseElement.type = 'hidden';
-				this.getForm().appendChild( tokenResponseElement );
-			}
+			console.log(response);
 
-			tokenResponseElement.value = JSON.stringify( response );
-			this.placeOrder();
+			var that = this;
+
+			this.cardForm.frames["card-cvv"].getCvv().then(function (c) {
+				
+				/**
+				 * CVV; needed for TransIT gateway processing only
+				 *
+				 * @type {string}
+				 */
+				var cvvVal = c;
+
+				var tokenResponseElement =
+					/**
+					 * Get hidden
+					 *
+					 * @type {HTMLInputElement}
+					 */
+					(document.getElementById( that.id + '-token_response' ));
+				if ( ! tokenResponseElement) {
+					tokenResponseElement      = document.createElement( 'input' );
+					tokenResponseElement.id   = that.id + '-token_response';
+					tokenResponseElement.name = that.id + '[token_response]';
+					tokenResponseElement.type = 'hidden';
+					that.getForm().appendChild( tokenResponseElement );
+				}
+
+				response.details.cardSecurityCode = cvvVal;
+				tokenResponseElement.value = JSON.stringify( response );
+				that.placeOrder();
+			});
 		},
 
 		/**
@@ -283,6 +315,7 @@
 		 * @returns
 		 */
 		handleErrors: function ( error ) {
+			this.resetValidationErrors();
 			this.unblockOnError();
 
 			if ( ! error.reasons ) {
@@ -296,6 +329,42 @@
 				switch ( reason.code ) {
 					case 'INVALID_CARD_NUMBER':
 						this.showValidationError( 'card-number' );
+						break;
+					case 'INVALID_CARD_EXPIRATION':
+						this.showValidationError( 'card-expiration' );
+						break;
+					case 'INVALID_CARD_SECURITY_CODE':
+						this.showValidationError( 'card-cvv' );
+						break;
+					case 'MANDATORY_DATA_MISSING':
+						var n = reason.message.search( "expiry_month" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-expiration' );
+							break;
+						}
+						var n = reason.message.search( "card.cvn.number" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-cvv' );
+							break;
+						}
+					case 'INVALID_REQUEST_DATA':
+						var n = reason.message.search( "number contains unexpected data" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-number' );
+							break;
+						}
+						var n = reason.message.search( "Luhn Check" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-number' );
+							break;
+						}
+						var n = reason.message.search( "cvv contains unexpected data" );
+						if ( n>=0 ) {
+							this.showValidationError( 'card-cvv' );
+							break;
+						}
+					case 'ERROR':
+						alert(reason.message);
 						break;
 					default:
 						break;
@@ -335,7 +404,7 @@
 		 * @returns {object}
 		 */
 		getStyleConfiguration: function () {
-			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.3.0/assets';
+			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.6.0/assets';
 			return {
 				'html': {
 					'font-size': '62.5%'
