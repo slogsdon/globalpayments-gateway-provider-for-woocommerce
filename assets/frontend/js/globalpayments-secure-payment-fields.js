@@ -505,9 +505,6 @@
 
 			this.unblockOnError();
 
-			// Remove notices from all sources
-			$( '.woocommerce-error, .woocommerce-message' ).remove();
-
 			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-updateOrderReview woocommerce-error">' + message + '</div>' );
 
 			$( 'html, body' ).animate( {
