@@ -4,7 +4,6 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways\Clients;
 
 use GlobalPayments\Api\Builders\TransactionBuilder;
 use GlobalPayments\Api\Entities\Address;
-use GlobalPayments\Api\Entities\Enums\GpApi\Channels;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Entities\Enums\AddressType;
 use GlobalPayments\Api\Entities\Enums\CardType;
@@ -61,10 +60,6 @@ class SdkClient implements ClientInterface {
 		AbstractGateway::TXN_TYPE_REFUND,
 		AbstractGateway::TXN_TYPE_REVERSAL,
 		AbstractGateway::TXN_TYPE_VOID,
-	);
-
-	protected $access_token_permissions = array(
-		'PMT_POST_Create_Single',
 	);
 
 	/**
@@ -318,39 +313,24 @@ class SdkClient implements ClientInterface {
 			case GatewayProvider::TRANSIT:
 				$gatewayConfig = new TransitConfig();
 				$gatewayConfig->acceptorConfig = new AcceptorConfig(); // defaults should work here
+				if ( $this->get_arg( RequestArg::TXN_TYPE ) === AbstractGateway::TXN_TYPE_CREATE_MANIFEST ) {
+					$gatewayConfig->deviceId = $this->args[ RequestArg::SERVICES_CONFIG ]['tsepDeviceId'];
+				}
 				break;
 			case GatewayProvider::GENIUS:
 				$gatewayConfig = new GeniusConfig();
 				break;
 			case GatewayProvider::GP_API:
 				$gatewayConfig = new GpApiConfig();
-				$servicesConfig = $this->args[ RequestArg::SERVICES_CONFIG ];
-				$gatewayConfig->setAppId( $servicesConfig['AppId'] );
-				$gatewayConfig->setAppKey( $servicesConfig['AppKey'] );
-				$gatewayConfig->setMethodNotificationUrl($servicesConfig['methodNotificationUrl']);
-				$gatewayConfig->setChallengeNotificationUrl($servicesConfig['challengeNotificationUrl']);
-				$gatewayConfig->setChannel( Channels::CardNotPresent );
-				if ( in_array( $this->get_arg( RequestArg::TXN_TYPE ), $this->client_transactions, true ) ) {
-					$gatewayConfig->setPermissions( $this->access_token_permissions );
+				if ( $this->has_arg( RequestArg::PERMISSIONS ) ) {
+					$gatewayConfig->permissions = $this->get_arg( RequestArg::PERMISSIONS );
 				}
-
-				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['gatewayProvider'] );
-				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['methodNotificationUrl'] );
-				unset( $this->args[ RequestArg::SERVICES_CONFIG ]['challengeNotificationUrl'] );
 				break;
 		}
-
 		$config = $this->set_object_data(
 			$gatewayConfig,
 			$this->args[ RequestArg::SERVICES_CONFIG ]
 		);
-
-		if (
-			$this->args['SERVICES_CONFIG']['gatewayProvider'] === GatewayProvider::TRANSIT &&
-			$this->get_arg( RequestArg::TXN_TYPE ) === AbstractGateway::TXN_TYPE_CREATE_MANIFEST
-		) {
-			$config->deviceId = $this->args[ RequestArg::SERVICES_CONFIG ]['tsepDeviceId'];
-		}
 
 		ServicesContainer::configureService( $config );
 	}

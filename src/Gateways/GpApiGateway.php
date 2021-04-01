@@ -4,6 +4,7 @@ namespace GlobalPayments\WooCommercePaymentGatewayProvider\Gateways;
 
 use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\Api\Entities\Enums\GpApi\Channels;
 use GlobalPayments\WooCommercePaymentGatewayProvider\Plugin;
 
 defined( 'ABSPATH' ) || exit;
@@ -96,8 +97,9 @@ class GpApiGateway extends AbstractGateway {
 
 	public function get_backend_gateway_options() {
 		return array(
-			'AppId'                    => $this->app_id,
-			'AppKey'                   => $this->app_key,
+			'appId'                    => $this->app_id,
+			'appKey'                   => $this->app_key,
+			'channel'                  => Channels::CardNotPresent,
 			'developerId'              => '',
 			'environment'              => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
 			'methodNotificationUrl'    => $this->get_api_url('globalpayments_threedsecure_methodnotification'),
