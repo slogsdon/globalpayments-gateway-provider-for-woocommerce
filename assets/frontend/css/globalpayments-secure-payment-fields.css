@@ -1,6 +1,12 @@
 .globalpayments iframe {
 	min-height: 3.6rem;
+	width: 100%;
 }
+
+.globalpayments iframe[id^="secure-payment-field-submit"] {
+	min-height: 6.6rem;
+}
+
 
 div[id^="GlobalPayments-overlay-"] {
 	z-index: 1001 !important;

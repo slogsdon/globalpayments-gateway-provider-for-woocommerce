@@ -251,9 +251,16 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		parent::tokenization_script();
 
 		// Global Payments styles for client-side tokenization
+		$css_style = Plugin::get_url( '/assets/frontend/css/globalpayments-secure-payment-fields.css' );
+		/**
+		 * Allow iframe styling according to theme
+		 *
+		 * @param $css_style CSS stylesheet
+		 */
+		$css_style = apply_filters( 'globalpayments_secure_payment_fields', $css_style );
 		wp_enqueue_style(
 			'globalpayments-secure-payment-fields',
-			Plugin::get_url( '/assets/frontend/css/globalpayments-secure-payment-fields.css' ),
+			$css_style,
 			array(),
 			WC()->version
 		);

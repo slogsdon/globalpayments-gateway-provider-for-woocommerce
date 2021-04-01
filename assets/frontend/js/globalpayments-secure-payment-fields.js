@@ -269,31 +269,13 @@
 				|| ! $( '#billing_last_name' ).val()
 				|| ! $( '#billing_address_1' ).val()
 				|| ! $( '#billing_city' ).val()
-				|| ! $( '#billing_postcode' ).val()
 				|| ! $( '#billing_phone' ).val()
 				|| ! $( '#billing_email' ).val() ) {
 				this.showPaymentError( 'Please fill in the required fields.' );
 				return false;
 			}
 
-			if ( ! this.isValidZipCode( $( '#billing_postcode' ).val() ) ) {
-				this.showPaymentError( 'Billing ZIP is not a valid postcode / ZIP. ' );
-				return false;
-			}
-
 			return true;
-		},
-
-		/**
-		 * Validate zipcode
-		 *
-		 * @param {String} zipcode
-		 * @return {Boolean}
-		 */
-		isValidZipCode: function ( zipcode ) {
-			let pattern = /^[a-zA-Z0-9-\s]{1,16}$/;
-
-			return pattern.test(zipcode);
 		},
 
 		/**
@@ -505,6 +487,9 @@
 
 			this.unblockOnError();
 
+			// Remove notices from all sources
+			$( '.woocommerce-error, .woocommerce-message' ).remove();
+
 			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-updateOrderReview woocommerce-error">' + message + '</div>' );
 
 			$( 'html, body' ).animate( {
@@ -612,7 +597,7 @@
 			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.6.0/assets';
 			return {
 				'html': {
-					'font-size': '62.5%'
+					'font-size': '80%'
 				},
 				'body': {
 					'font-size': '1.4rem'
@@ -648,42 +633,48 @@
 					'outline': 'none'
 				},
 				'#secure-payment-field[type=button]': {
-					'text-align': 'center',
-					'text-transform': 'none',
-					'white-space': 'nowrap',
-
-					'background-image': 'none',
-					'background': '#1979c3',
-					'border': '1px solid #1979c3',
-					'color': '#ffffff',
-					'cursor': 'pointer',
-					'display': 'inline-block',
-					'font-family': '"Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
-					'font-weight': '500',
-					'padding': '14px 17px',
-					'font-size': '1.8rem',
-					'line-height': '2.2rem',
-					'box-sizing': 'border-box',
-					'vertical-align': 'middle',
-					'margin': '0',
-					'height': 'initial',
-					'width': 'initial',
-					'flex': 'initial',
-					'position': 'absolute',
-					'right': '0'
+				'white-space': 'nowrap',
+				'background-image': 'none',
+				'-webkit-appearance': 'none',
+				'-moz-appearance': 'none',
+				'float': 'none',
+				'box-sizing': 'border-box',
+				'margin-bottom': '1em',
+				'background': '#000000',
+				'border': 'none',
+				'border-radius': '0',
+				'color': '#fff',
+				'cursor': 'pointer',
+				'display': 'inline-block',
+				'font-size': '17px',
+				'font-weight': '600',
+				'letter-spacing': '0.0333em',
+				'line-height': '1.25',
+				'margin': '0',
+				'opacity': '1',
+				'padding': '1.1em 1.44em',
+				'text-align': 'center',
+				'text-decoration': 'none',
+				'text-transform': 'uppercase',
+				'transition': 'opacity 0.15s linear',
+				'height': 'initial',
+				'width': '100%',
+				'flex': 'initial',
+				'position': 'relative'
 				},
 				'#secure-payment-field[type=button]:focus': {
 					'outline': 'none',
 
 					'box-shadow': 'none',
-					'background': '#006bb4',
+					'background': '##000000',
 					'border': '1px solid #006bb4',
 					'color': '#ffffff'
 				},
 				'#secure-payment-field[type=button]:hover': {
-					'background': '#006bb4',
-					'border': '1px solid #006bb4',
-					'color': '#ffffff'
+					'background': '##000000',
+					'border': '0px',
+					'color': '#ffffff',
+					'text-decoration': 'underline'
 				},
 				'.card-cvv': {
 					'background': 'transparent url(' + imageBase + '/cvv.png) no-repeat right',
