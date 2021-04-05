@@ -449,7 +449,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		'<div class="form-row form-row-wide globalpayments %1$s %2$s">
 				<label for="%1$s-%2$s">%3$s&nbsp;<span class="required">*</span></label>
 				<div id="%1$s-%2$s"></div>
-				<ul class="woocommerce_error woocommerce-error validation-error" style="display: none;">
+				<ul class="woocommerce-globalpayments-validation-error" style="display: none;">
 					<li>%4$s</li>
 				</ul>
 			</div>'

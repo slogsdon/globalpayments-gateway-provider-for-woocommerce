@@ -198,7 +198,6 @@
 			var newSavedCardSelected   = 'new' === $( this.getStoredPaymentMethodsRadioSelector() + ':checked' ).val();
 
 			var shouldBeVisible = (paymentGatewaySelected && ! savedCardsAvailable) || (savedCardsAvailable && newSavedCardSelected);
-
 			if (shouldBeVisible) {
 				// our gateway was selected
 				$( this.getSubmitButtonTargetSelector() ).show();
@@ -271,7 +270,7 @@
 				|| ! $( '#billing_city' ).val()
 				|| ! $( '#billing_phone' ).val()
 				|| ! $( '#billing_email' ).val() ) {
-				this.showPaymentError( 'Please fill in the required fields.' );
+
 				return false;
 			}
 
@@ -297,8 +296,9 @@
 			// handle 3DS 2.0 workflow
 			const start3DS = async (e) => {
 				e.preventDefault();
-
 				if ( wc_checkout_params.is_checkout && ! this.validateFields() ) {
+					this.showPaymentError( 'Please fill in the required fields.' );
+
 					return;
 				}
 
@@ -315,13 +315,19 @@
 						},
 					});
 
+					if ( "ONE" === versionCheckData.version ) {
+						this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
+						this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
+						$( this.getForm() ).submit();
+						return;
+					}
+
 					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
 					if (versionCheckData.enrolled === "NOT_ENROLLED") {
 						$( this.getForm() ).submit();
 						return;
 					}
 
-					//Something went wrong with CheckEnrolment request on server side
 					if (versionCheckData.error) {
 						this.showPaymentError( versionCheckData.message );
 						return;
@@ -329,13 +335,6 @@
 				} catch ( e ) {
 					console.error( e.reasons );
 					this.showPaymentError( e.reasons[0].message );
-					return;
-				}
-
-				if ( "ONE" === versionCheckData.version ) {
-					this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
-					this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
-					$( this.getForm() ).submit();
 					return;
 				}
 
@@ -351,29 +350,8 @@
 						order: this.order,
 					});
 
-					switch (authenticationData.result) {
-						case "SUCCESS_AUTHENTICATED":
-						case "AUTHENTICATION_SUCCESSFUL":
-							// frictionless authentication success
-							this.createInputElement( 'serverTransId', authenticationData.serverTransactionId );
-							$( this.getForm() ).submit();
-							return;
-						case "CHALLENGE_REQUIRED":
-							// challenge authentication success
-							if (authenticationData.challenge.response.data.transStatus == "Y") {
-								this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
-								$( this.getForm() ).submit();
-								 return;
-							}
-							// challenge authentication failure
-							this.showPaymentError('3DS Authentication failed. Please try again!');
-							return;
-						case "NOT_AUTHENTICATED":
-						case "FAILED":
-						default:
-							this.showPaymentError('3DS Authentication failed. Please try again!');
-							return;
-					}
+					this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
+					$( this.getForm() ).submit();
 				} catch (e) {
 					console.error( e );
 					this.showPaymentError( e.reasons );
@@ -384,6 +362,12 @@
 			};
 
 			checkVersionButton.on('click', start3DS );
+			$( document ).on("click",'img[id^="GlobalPayments-frame-close-"]', this.cancelTransaction.bind( this ) );
+
+		},
+
+		cancelTransaction: function () {
+			this.showPaymentError( 'Transaction canceled' );
 		},
 
 		createInputElement: function ( name, value ) {
@@ -461,7 +445,7 @@
 		 * @returns
 		 */
 		resetValidationErrors: function () {
-			$( '.' + this.id + ' .validation-error' ).hide();
+			$( '.' + this.id + ' .woocommerce-globalpayments-validation-error' ).hide();
 		},
 
 		/**
@@ -472,11 +456,11 @@
 		 * @returns
 		 */
 		showValidationError: function (fieldType) {
-			$( '.' + this.id + '.' + fieldType + ' .validation-error' ).show();
+			$( '.' + this.id + '.' + fieldType + ' .woocommerce-globalpayments-validation-error' ).show();
 		},
 
 		/**
-		 * Shows payment error  and scrolls to it
+		 * Shows payment error and scrolls to it
 		 *
 		 * @param {string} message Error message
 		 *
@@ -488,9 +472,9 @@
 			this.unblockOnError();
 
 			// Remove notices from all sources
-			$( '.woocommerce-error, .woocommerce-message' ).remove();
+			$( '.woocommerce-NoticeGroup, .woocommerce-NoticeGroup-checkout, .woocommerce-error, .woocommerce-globalpayments-checkout-error' ).remove();
 
-			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-updateOrderReview woocommerce-error">' + message + '</div>' );
+			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout woocommerce-error woocommerce-globalpayments-checkout-error">' + message + '</div>' );
 
 			$( 'html, body' ).animate( {
 				scrollTop: ( $form.offset().top - 100 )
@@ -513,7 +497,6 @@
 			}
 
 			var numberOfReasons = error.reasons.length;
-
 			for ( var i = 0; i < numberOfReasons; i++ ) {
 				var reason = error.reasons[i];
 				switch ( reason.code ) {
@@ -597,84 +580,62 @@
 			var imageBase = 'https://api2.heartlandportico.com/securesubmit.v1/token/gp-1.6.0/assets';
 			return {
 				'html': {
-					'font-size': '80%'
+					'font-size': '100%',
+					'-webkit-text-size-adjust': '100%',
 				},
+
 				'body': {
-					'font-size': '1.4rem'
+					'font-size': '14px',
 				},
 				'#secure-payment-field-wrapper': {
-					'postition': 'relative'
+					'position': 'relative'
 				},
 				'#secure-payment-field': {
-					'-o-transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s',
-					'-webkit-box-shadow': 'inset 0 1px 1px rgba(0,0,0,.075)',
-					'-webkit-transition': 'border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s',
 					'background-color': '#fff',
-					'border': '1px solid #cecece',
-					'border-radius': '2px',
-					'box-shadow': 'none',
-					'box-sizing': 'border-box',
+					'border': '1px solid #ccc',
+					'border-radius': '4px',
 					'display': 'block',
-					'font-family': '"Roboto", sans-serif',
-					'font-size': '11px',
-					'font-smoothing': 'antialiased',
+
+					'font-size': '14px',
 					'height': '35px',
-					'margin': '5px 0 10px 0',
-					'max-width': '100%',
-					'outline': '0',
-					'padding': '0 10px',
-					'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s',
-					'vertical-align': 'baseline',
-					'width': '100%'
+					'padding': '6px 12px',
+					'width': '100%',
 				},
 				'#secure-payment-field:focus': {
 					'border': '1px solid lightblue',
 					'box-shadow': '0 1px 3px 0 #cecece',
 					'outline': 'none'
 				},
-				'#secure-payment-field[type=button]': {
-				'white-space': 'nowrap',
-				'background-image': 'none',
-				'-webkit-appearance': 'none',
-				'-moz-appearance': 'none',
-				'float': 'none',
-				'box-sizing': 'border-box',
-				'margin-bottom': '1em',
-				'background': '#000000',
-				'border': 'none',
-				'border-radius': '0',
-				'color': '#fff',
-				'cursor': 'pointer',
-				'display': 'inline-block',
-				'font-size': '17px',
-				'font-weight': '600',
-				'letter-spacing': '0.0333em',
-				'line-height': '1.25',
-				'margin': '0',
-				'opacity': '1',
-				'padding': '1.1em 1.44em',
-				'text-align': 'center',
-				'text-decoration': 'none',
-				'text-transform': 'uppercase',
-				'transition': 'opacity 0.15s linear',
-				'height': 'initial',
-				'width': '100%',
-				'flex': 'initial',
-				'position': 'relative'
+			 	'#secure-payment-field[type=button]': {
+					'cursor': 'pointer',
+					'border': '0',
+					'border-radius': '0',
+					'background': 'none',
+					'background-color': '#333333',
+					'border-color': '#333333',
+					'color': '#fff',
+					'padding': '.6180469716em 1.41575em',
+					'text-decoration': 'none',
+					'text-shadow': 'none',
+					'display': 'inline-block',
+					'height': 'initial',
+					'width': '100%',
+					'flex': 'initial',
+					'position': 'relative',
+					'margin': '0',
+					'-webkit-appearance': 'none',
+					'white-space': 'pre-wrap',
+					'margin-bottom': '0',
+					'float': 'none',
+					'font': '600 1.41575em Source Sans Pro,HelveticaNeue-Light,Helvetica Neue Light,Helvetica Neue,Helvetica,Arial,Lucida Grande,sans-serif !important'
 				},
 				'#secure-payment-field[type=button]:focus': {
-					'outline': 'none',
-
-					'box-shadow': 'none',
-					'background': '##000000',
-					'border': '1px solid #006bb4',
-					'color': '#ffffff'
+					'color': '#fff',
+					'background': '#000000',
 				},
 				'#secure-payment-field[type=button]:hover': {
-					'background': '##000000',
-					'border': '0px',
-					'color': '#ffffff',
-					'text-decoration': 'underline'
+					'color': '#fff',
+					'background': '#000000',
 				},
 				'.card-cvv': {
 					'background': 'transparent url(' + imageBase + '/cvv.png) no-repeat right',
