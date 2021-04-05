@@ -354,6 +354,11 @@
 						order: this.order,
 					});
 
+					if ( authenticationData.error ) {
+						this.showPaymentError( authenticationData.message );
+						return;
+					}
+
 					this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
 					$( this.getForm() ).submit();
 				} catch (e) {
