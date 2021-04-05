@@ -319,15 +319,15 @@
 						},
 					});
 
-					if ( "ONE" === versionCheckData.version ) {
-						this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
-						this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
+					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
+					if (versionCheckData.enrolled === "NOT_ENROLLED") {
 						$( this.getForm() ).submit();
 						return;
 					}
 
-					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
-					if (versionCheckData.enrolled === "NOT_ENROLLED") {
+					if ( "ONE" === versionCheckData.version ) {
+						this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
+						this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
 						$( this.getForm() ).submit();
 						return;
 					}
@@ -544,7 +544,7 @@
 						alert(reason.message);
 						break;
 					default:
-						break;
+						this.showPaymentError( reason.message );
 				}
 			}
 		},
