@@ -473,6 +473,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 		if ( is_add_payment_method_page() ) {
 			add_action( 'wp_enqueue_scripts', array( $this, 'tokenization_script' ) );
+			add_filter( 'woocommerce_available_payment_gateways', array( $this, 'woocommerce_available_payment_gateways') );
 		}
 	}
 
@@ -747,5 +748,19 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
         $actions['capture_credit_card_authorization'] = 'Capture credit card authorization';
         return $actions;
     }
+
+	/**
+	 * Disable adding new cards via 'My Account', if "Allow Card Saving" option not checked in admin.
+	 *
+	 * @param array $available_gateways
+	 * @return array
+	 */
+    public function woocommerce_available_payment_gateways( $available_gateways ) {
+		if ( 'no' === $this->get_option( 'allow_card_saving' ) ) {
+			unset( $available_gateways[ $this->id ]);
+		}
+
+		return $available_gateways;
+	}
 
 }
