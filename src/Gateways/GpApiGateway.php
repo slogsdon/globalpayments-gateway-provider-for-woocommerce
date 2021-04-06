@@ -198,7 +198,10 @@ EOT;
 			}
 
 			if ( isset( $_POST['PaRes'] ) ) {
-				$response = json_encode( [ 'PaRes' => $_POST['PaRes'] ], JSON_UNESCAPED_SLASHES );
+				$response = json_encode( [
+					'MD'    => $_POST['MD'],
+					'PaRes' => $_POST['PaRes']
+				], JSON_UNESCAPED_SLASHES );
 			}
 
 			$globalpayments_threedsecure_lib = Plugin::get_url( '/assets/frontend/js/globalpayments-3ds.js' );

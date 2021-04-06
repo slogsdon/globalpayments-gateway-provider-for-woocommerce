@@ -285,92 +285,87 @@
 		 * 3DS Process
 		 */
 		threeDSSecure: function () {
-			const {
-				checkVersion,
-				initiateAuthentication,
-				ChallengeWindowSize,
-			} = GlobalPayments.ThreeDSecure;
-
-			const checkVersionButton = $( this.getPlaceOrderButtonSelector() );
+			var checkVersionButton = $( this.getPlaceOrderButtonSelector() );
 			if ( ! checkVersionButton ) {
 				console.error( 'Warning! Place Order button cannot be loaded' );
 				return;
 			}
 
-			// handle 3DS 2.0 workflow
-			const start3DS = async (e) => {
+			//handle 3DS 2.0 workflow
+			var start3DS = async (e) => {
 				e.preventDefault();
 				if ( wc_checkout_params.is_checkout && ! this.validateFields() ) {
 					this.showPaymentError( 'Please fill in the required fields.' );
-
+					e.stopPropagation();
 					return;
 				}
 
-				try {
-					versionCheckData = await checkVersion(this.threedsecure.checkEnrollmentUrl, {
-						tokenResponse: this.tokenResponse,
-						wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
-						amount: this.order.amount,
-						currency: this.order.currency,
-						challengeWindow: {
-							windowSize: ChallengeWindowSize.Windowed500x600,
-							displayMode: 'lightbox',
-							hide: false,
-						},
+				var _that = this;
+
+				GlobalPayments.ThreeDSecure.checkVersion( this.threedsecure.checkEnrollmentUrl, {
+					tokenResponse: this.tokenResponse,
+					wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
+					amount: this.order.amount,
+					currency: this.order.currency,
+					challengeWindow: {
+						windowSize: GlobalPayments.ThreeDSecure.ChallengeWindowSize.Windowed500x600,
+						displayMode: 'lightbox',
+						hide: false,
+					},
+				})
+					.then( function( versionCheckData ) {
+						// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
+						if ( versionCheckData.enrolled === "NOT_ENROLLED" ) {
+							$( _that.getForm() ).submit();
+							return;
+						}
+
+						if ( "ONE" === versionCheckData.version ) {
+							_that.createInputElement( 'serverTransId', versionCheckData.challenge.response.data.MD );
+							_that.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
+							$( _that.getForm() ).submit();
+							return;
+						}
+
+						if ( versionCheckData.error ) {
+							_that.showPaymentError( versionCheckData.message );
+							return;
+						}
+
+						GlobalPayments.ThreeDSecure.initiateAuthentication( _that.threedsecure.initiateAuthenticationUrl, {
+							tokenResponse: _that.tokenResponse,
+							wcTokenId: $( 'input[name="wc-' + _that.id + '-payment-token"]:checked', _that.getForm() ).val(),
+							versionCheckData: versionCheckData,
+							challengeWindow: {
+								windowSize: GlobalPayments.ThreeDSecure.ChallengeWindowSize.Windowed500x600,
+								displayMode: 'lightbox',
+							},
+							order: _that.order,
+						})
+							.then( function ( authenticationData ) {
+								if ( authenticationData.error ) {
+									_that.showPaymentError( authenticationData.message );
+									return;
+								}
+								_that.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
+								$( _that.getForm() ).submit();
+
+							})
+
+					})
+					.catch( function( e ) {
+						console.error( e );
+						_that.showPaymentError( e.reasons[0].message );
+						return;
 					});
 
-					// Card holder not enrolled in 3D Secure, continue the WooCommerce flow.
-					if (versionCheckData.enrolled === "NOT_ENROLLED") {
-						$( this.getForm() ).submit();
-						return;
-					}
 
-					if ( "ONE" === versionCheckData.version ) {
-						this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
-						this.createInputElement( 'PaRes', versionCheckData.challenge.response.data.PaRes );
-						$( this.getForm() ).submit();
-						return;
-					}
 
-					if (versionCheckData.error) {
-						this.showPaymentError( versionCheckData.message );
-						return;
-					}
-				} catch ( e ) {
-					console.error( e.reasons );
-					this.showPaymentError( e.reasons[0].message );
-					return;
-				}
-
-				try {
-					authenticationData = await initiateAuthentication(this.threedsecure.initiateAuthenticationUrl, {
-						tokenResponse: this.tokenResponse,
-						wcTokenId: $( 'input[name="wc-' + this.id + '-payment-token"]:checked', this.getForm() ).val(),
-						versionCheckData: versionCheckData,
-						challengeWindow: {
-							windowSize: ChallengeWindowSize.Windowed500x600,
-							displayMode: 'lightbox',
-						},
-						order: this.order,
-					});
-
-					if ( authenticationData.error ) {
-						this.showPaymentError( authenticationData.message );
-						return;
-					}
-
-					this.createInputElement( 'serverTransId', versionCheckData.serverTransactionId);
-					$( this.getForm() ).submit();
-				} catch (e) {
-					console.error( e );
-					this.showPaymentError( e.reasons );
-					return;
-				}
 
 				return false;
 			};
 
-			checkVersionButton.on('click', start3DS );
+			checkVersionButton.off( 'click' ).on('click', start3DS );
 			$( document ).on("click",'img[id^="GlobalPayments-frame-close-"]', this.cancelTransaction.bind( this ) );
 
 		},
@@ -481,7 +476,7 @@
 			this.unblockOnError();
 
 			// Remove notices from all sources
-			$( '.woocommerce-NoticeGroup, .woocommerce-NoticeGroup-checkout, .woocommerce-error, .woocommerce-globalpayments-checkout-error' ).remove();
+			$( '.woocommerce-globalpayments-checkout-error' ).remove();
 
 			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout woocommerce-error woocommerce-globalpayments-checkout-error">' + message + '</div>' );
 
