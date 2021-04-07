@@ -28,7 +28,7 @@ class CheckEnrollmentRequest extends AbstractRequest {
 		$response    = [];
 		$requestData = $this->data;
 		try {
-			if ( 'new' !== $requestData->wcTokenId ) {
+			if ( isset( $requestData->wcTokenId ) && 'new' !== $requestData->wcTokenId ) {
 				$tokenResponse = \WC_Payment_Tokens::get( $requestData->wcTokenId );
 				$token = $tokenResponse->get_token();
 			} else {
