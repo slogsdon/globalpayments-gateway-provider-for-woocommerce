@@ -28,12 +28,12 @@ class CheckEnrollmentRequest extends AbstractRequest {
 		$response    = [];
 		$requestData = $this->data;
 		try {
-			if ( isset( $requestData->tokenResponse ) ) {
-				$tokenResponse = json_decode( $requestData->tokenResponse );
-				$token = $tokenResponse->paymentReference;
-			} else {
+			if ( 'new' !== $requestData->wcTokenId ) {
 				$tokenResponse = \WC_Payment_Tokens::get( $requestData->wcTokenId );
 				$token = $tokenResponse->get_token();
+			} else {
+				$tokenResponse = json_decode( $requestData->tokenResponse );
+				$token = $tokenResponse->paymentReference;
 			}
 
 			$paymentMethod = new CreditCardData();
@@ -43,6 +43,7 @@ class CheckEnrollmentRequest extends AbstractRequest {
 				->withAmount($requestData->amount)
 				->withCurrency($requestData->currency)
 				->execute();
+
 			$response["enrolled"] = $threeDSecureData->enrolled ?? self::NOT_ENROLLED;
 			$response['version'] = $threeDSecureData->getVersion();
 			$response["serverTransactionId"] = $threeDSecureData->serverTransactionId ?? '';
