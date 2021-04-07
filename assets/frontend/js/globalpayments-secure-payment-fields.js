@@ -350,7 +350,7 @@
 								_that.createInputElement( 'serverTransId', versionCheckData.serverTransactionId );
 								$( _that.getForm() ).submit();
 
-							})
+							});
 
 					})
 					.catch( function( e ) {
@@ -366,6 +366,8 @@
 			};
 
 			checkVersionButton.off( 'click' ).on('click', start3DS );
+			checkVersionButton.on( 'click', this.blockOnSubmit.bind( this ) );
+
 			$( document ).on("click",'img[id^="GlobalPayments-frame-close-"]', this.cancelTransaction.bind( this ) );
 
 		},
