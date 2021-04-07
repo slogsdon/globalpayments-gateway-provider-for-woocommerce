@@ -293,12 +293,14 @@
 
 			//handle 3DS 2.0 workflow
 			var start3DS = async (e) => {
+				this.blockOnSubmit();
 				e.preventDefault();
 				if ( wc_checkout_params.is_checkout && ! this.validateFields() ) {
 					this.showPaymentError( 'Please fill in the required fields.' );
 					e.stopPropagation();
 					return;
 				}
+
 
 				var _that = this;
 
@@ -366,7 +368,6 @@
 			};
 
 			checkVersionButton.off( 'click' ).on('click', start3DS );
-			checkVersionButton.on( 'click', this.blockOnSubmit.bind( this ) );
 
 			$( document ).on("click",'img[id^="GlobalPayments-frame-close-"]', this.cancelTransaction.bind( this ) );
 
