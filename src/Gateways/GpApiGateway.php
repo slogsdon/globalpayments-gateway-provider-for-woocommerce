@@ -100,6 +100,7 @@ class GpApiGateway extends AbstractGateway {
 			'appId'                    => $this->app_id,
 			'appKey'                   => $this->app_key,
 			'channel'                  => Channels::CardNotPresent,
+			'country'                  => wc_get_base_location()['country'],
 			'developerId'              => '',
 			'environment'              => $this->is_production ? Environment::PRODUCTION : Environment::TEST,
 			'methodNotificationUrl'    => $this->get_api_url('globalpayments_threedsecure_methodnotification'),
