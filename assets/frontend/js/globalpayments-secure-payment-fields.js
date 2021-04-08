@@ -484,7 +484,7 @@
 			this.unblockOnError();
 
 			// Remove notices from all sources
-			$( '.woocommerce-globalpayments-checkout-error' ).remove();
+			$( '.woocommerce-NoticeGroup, .woocommerce-NoticeGroup-checkout, .woocommerce-error, .woocommerce-globalpayments-checkout-error' ).remove();
 
 			$form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout woocommerce-error woocommerce-globalpayments-checkout-error">' + message + '</div>' );
 
