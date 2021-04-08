@@ -82,8 +82,17 @@
 				}
 			);
 
-			// Order Pay + Add payment method
-			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) || $( 'form#add_payment_method' ).length > 0 ) {
+			// Checkout
+			if ( 1 == wc_checkout_params.is_checkout ) {
+				$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
+				if ( 'globalpayments_gpapi' === this.id) {
+					$( document.body ).on( 'updated_checkout', this.threeDSSecure.bind( this ) );
+				}
+				return;
+			}
+
+			// Order Pay
+			if ( $( document.body ).hasClass( 'woocommerce-order-pay' ) ) {
 				$( document ).ready( this.renderPaymentFields.bind( this ) );
 				if ( 'globalpayments_gpapi' === this.id) {
 					$( document ).ready( this.threeDSSecure.bind( this ) );
@@ -91,12 +100,9 @@
 				return;
 			}
 
-			// Checkout
-			if ( wc_checkout_params.is_checkout ) {
-				$( document.body ).on( 'updated_checkout', this.renderPaymentFields.bind( this ) );
-				if ( 'globalpayments_gpapi' === this.id) {
-					$( document.body ).on( 'updated_checkout', this.threeDSSecure.bind( this ) );
-				}
+			// Add payment method
+			if ( $( 'form#add_payment_method' ).length > 0 ) {
+				$( document ).ready( this.renderPaymentFields.bind( this ) );
 				return;
 			}
 		},
