@@ -295,12 +295,11 @@
 			var start3DS = async (e) => {
 				this.blockOnSubmit();
 				e.preventDefault();
-				if ( wc_checkout_params.is_checkout && ! this.validateFields() ) {
+				if ( 1 === wc_checkout_params.is_checkout && ! this.validateFields() ) {
 					this.showPaymentError( 'Please fill in the required fields.' );
 					e.stopPropagation();
 					return;
 				}
-
 
 				var _that = this;
 
