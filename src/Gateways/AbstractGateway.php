@@ -507,14 +507,13 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 
 		try {
 			$response = $this->submit_request( $request );
+			$is_successful = $this->handle_response( $request, $response );
 		} catch ( Exception $e ) {
 			return array(
 				'result'   => 'failure',
 				'redirect' => $redirect,
 			);
 		}
-
-		$is_successful = $this->handle_response( $request, $response );
 
 		return array(
 			'result'   => $is_successful ? 'success' : 'failure',
