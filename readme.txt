@@ -3,7 +3,6 @@ Contributors: globalpayments
 Tags: woocommerce, woo, commerce, global, payments, heartland, payment, systems, tsys, genius, gpapi, gp-api, 3DS, gateway, token, tokenize, save cards
 Requires at least: 5.4
 Tested up to: 5.7
-Requires PHP: 7.2
 Stable tag: trunk
 License: MIT
 License URI: https://github.com/globalpayments/globalpayments-gateway-provider-for-woocommerce/blob/master/LICENSE
@@ -30,6 +29,13 @@ For more information or questions, please email <a href="mailto:developers@globa
 
 = Developer Docs =
 Discover our developer portal powered by Heartland, a Global Payments Company (https://developer.heartlandpaymentsystems.com/) or our portal for companies located outside the US (https://developer.globalpay.com/).
+
+== Installation ==
+After you have installed and configured the main WooCommerce plugin use the following steps to install the Global Payments Gateway Provider for WooCommerce:
+1. In your WordPress admin, go to Plugins > Add New and search for "Global Payments Gateway Provider for WooCommerce"
+2. Click Install, once installed click Activate
+3. Configure and Enable gateways in WooCommerce by adding your public and secret Api Keys
+
 == Changelog ==
 
 = 1.0.0 =
