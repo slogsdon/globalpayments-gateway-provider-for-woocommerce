@@ -30,12 +30,12 @@ class InitiateAuthenticationRequest extends AbstractRequest {
 		$requestData  = $this->data;
 
 		try {
-			if ( isset( $requestData->tokenResponse ) ) {
-				$tokenResponse = json_decode( $requestData->tokenResponse );
-				$token = $tokenResponse->paymentReference;
-			} else {
+			if ( isset( $requestData->wcTokenId ) && 'new' !== $requestData->wcTokenId ) {
 				$tokenResponse = \WC_Payment_Tokens::get( $requestData->wcTokenId );
 				$token = $tokenResponse->get_token();
+			} else {
+				$tokenResponse = json_decode( $requestData->tokenResponse );
+				$token = $tokenResponse->paymentReference;
 			}
 
 			$paymentMethod = new CreditCardData();
