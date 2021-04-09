@@ -159,7 +159,7 @@ class GpApiGateway extends AbstractGateway {
 
 		$globalpayments_threedsecure_lib = Plugin::get_url( '/assets/frontend/js/globalpayments-3ds.js' );
 
-		$convertedThreeDSMethodData = json_decode( base64_decode( $_POST['threeDSMethodData'] ) );
+		$convertedThreeDSMethodData = wc_clean( json_decode( base64_decode( $_POST['threeDSMethodData'] ) ) );
 		$response = json_encode([
 			'threeDSServerTransID' => $convertedThreeDSMethodData->threeDSServerTransID,
 		]);
@@ -190,7 +190,7 @@ EOT;
 			$response = new \stdClass();
 
 			if ( isset( $_POST['cres'] ) ) {
-				$convertedCRes = json_decode( base64_decode( $_POST['cres'] ) );
+				$convertedCRes = wc_clean( json_decode( base64_decode( $_POST['cres'] ) ) );
 
 				$response = json_encode([
 					'threeDSServerTransID' => $convertedCRes->threeDSServerTransID,
@@ -200,8 +200,8 @@ EOT;
 
 			if ( isset( $_POST['PaRes'] ) ) {
 				$response = json_encode( [
-					'MD'    => $_POST['MD'],
-					'PaRes' => $_POST['PaRes']
+					'MD'    => wc_clean( $_POST['MD'] ),
+					'PaRes' => wc_clean( $_POST['PaRes'] ),
 				], JSON_UNESCAPED_SLASHES );
 			}
 

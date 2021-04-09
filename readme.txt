@@ -3,7 +3,7 @@ Contributors: globalpayments
 Tags: woocommerce, woo, commerce, global, payments, heartland, payment, systems, tsys, genius, gpapi, gp-api, 3DS, gateway, token, tokenize, save cards
 Requires at least: 5.4
 Tested up to: 5.7
-Stable tag: trunk
+Stable tag: 1.0.0-b.1
 License: MIT
 License URI: https://github.com/globalpayments/globalpayments-gateway-provider-for-woocommerce/blob/master/LICENSE
 
@@ -38,5 +38,5 @@ After you have installed and configured the main WooCommerce plugin use the foll
 
 == Changelog ==
 
-= 1.0.0 =
+= 1.0.0-b.1 =
 * Initial release.

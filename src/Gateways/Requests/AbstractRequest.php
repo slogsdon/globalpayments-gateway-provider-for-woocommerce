@@ -75,7 +75,7 @@ abstract class AbstractRequest implements RequestInterface {
 			}
 			// WooCommerce should verify nonce during its checkout handling
 			// phpcs:ignore WordPress.Security.NonceVerification
-			return $_POST;
+			return wc_clean( $_POST );
 		}
 
 		if ( ! isset( $this->data[ $key ] ) ) {
