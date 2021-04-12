@@ -71,6 +71,27 @@ class HeartlandGateway extends AbstractGateway {
 				),
 				'default'			=> 'no'
 			),
+		    'check_avs_cvv' => array(
+		        'title'				=> __( 'Check AVS CVN', 'globalpayments-gateway-provider-for-woocommerce' ),
+		        'label'				=> __( 'Check AVS/CVN result codes and reverse transaction.', 'globalpayments-gateway-provider-for-woocommerce' ),
+		        'type'				=> 'checkbox',
+		        'description'		=> sprintf(
+		            __( 'This will check AVS/CVN result codes and reverse transaction.' )
+		            ),
+		        'default'			=> 'no'
+		    ),
+		    'avs_reject_conditions'    => array(
+		        'title'       => __( 'AVS Reject Conditions', 'globalpayments-gateway-provider-for-woocommerce' ),
+		        'type'        => 'multiselect',
+		        'description' => __( 'Choose for which AVS result codes, the transaction must be auto reveresed.'),
+		        'options'     => $this->avsRejectionConditions(),
+		    ),
+		    'cvn_reject_conditions'    => array(
+		        'title'       => __( 'CVN Reject Conditions', 'globalpayments-gateway-provider-for-woocommerce' ),
+		        'type'        => 'multiselect',
+		        'description' => __( 'Choose for which CVN result codes, the transaction must be auto reveresed.'),
+		        'options'     => $this->cvnRejectionConditions(),
+		    ),
 		);
 	}
 
@@ -209,5 +230,35 @@ class HeartlandGateway extends AbstractGateway {
 			'result'   => $is_successful ? 'success' : 'failure',
 			'redirect' => $is_successful ? $this->get_return_url( $order ) : false,
 		);
+	}
+	
+	private function avsRejectionConditions()
+	{
+	    return array(
+	        'A'  => 'Address matches, zip No Match',
+	        'N'  => 'Neither address or zip code match',
+	        'R'  => 'Retry - system unable to respond',
+	        'S/U'  => 'AVS not supported',
+	        'Z/W'  => '9-digit zip code match, address no match',
+	        'X/Y'  => '5-digit zip code and address match',
+	        'G'  => 'Address not verified for International transaction',
+	        'B'  => 'Address match, Zip not verified',
+	        'C'  => 'Address and zip mismatch',
+	        'D'  => 'Address and zip match',
+	        'I'  => 'AVS not verified for International transaction',
+	        'M'  => 'Street address and postal code matches',
+	        'P'  => 'Address and Zip not verified'
+	    );
+	}
+	
+	private function cvnRejectionConditions()
+	{
+	    return array(
+	        'N' => 'Not Matching',
+	        'P' => 'Not Processed',
+	        'S' => 'Result not present',
+	        'U' => 'Issuer not certified',
+	        '?' => 'CVV unrecognized'
+	    );
 	}
 }
