@@ -37,6 +37,27 @@ class HeartlandGateway extends AbstractGateway {
 	 * @var bool
 	 */
 	public $allow_gift_cards;
+	
+	/**
+	 * AVS CVN auto reverse condition
+	 *
+	 * @var bool
+	 */
+	public $check_avs_cvv;
+	
+	/**
+	 * AVS result codes
+	 *
+	 * @var array
+	 */
+	public $avs_reject_conditions;
+	
+	/**
+	 * CVN result codes
+	 *
+	 * @var array
+	 */
+	public $cvn_reject_conditions;
 
 	public function configure_method_settings() {
 		$this->id                 = 'globalpayments_heartland';
@@ -49,6 +70,7 @@ class HeartlandGateway extends AbstractGateway {
 	}
 
 	public function get_gateway_form_fields() {
+	    
 		return array(
 			'public_key' => array(
 				'title'       => __( 'Public Key', 'globalpayments-gateway-provider-for-woocommerce' ),
@@ -206,7 +228,22 @@ class HeartlandGateway extends AbstractGateway {
 		$request       = $this->prepare_request( $this->payment_action, $order );
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
-
+		
+		//reverse incase of AVS/CVN failure
+		if(!empty($response->transactionReference->transactionId) && !empty($this->check_avs_cvv)){
+		    if(!empty($response->avsResponseCode) || !empty($response->cvnResponseCode)){	
+		        //check admin selected decline condtions
+	            if(in_array($response->avsResponseCode, $this->avs_reject_conditions) ||
+	                in_array($response->cvnResponseCode, $this->cvn_reject_conditions)){
+	                    Transaction::fromId( $response->transactionReference->transactionId )
+	                    ->reverse( $request->order->data[ 'total' ] )
+	                    ->execute();
+	                    
+	                    $is_successful = false;
+	            }
+		    } 
+		}
+		
 		// Charge HPS gift cards if CC trans succeeds
 		if ( $is_successful && !empty( WC()->session->get( 'heartland_gift_card_applied' ) ) ) {
 			$gift_card_order_placement = new HeartlandGiftCardOrder();

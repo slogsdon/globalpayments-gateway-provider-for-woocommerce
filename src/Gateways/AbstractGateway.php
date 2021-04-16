@@ -625,7 +625,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 	 * @return bool
 	 */
 	protected function handle_response( Requests\RequestInterface $request, Transaction $response ) {
-		if ($response->responseCode !== '00' && 'SUCCESS' !== $response->responseCode || $response->responseMessage === 'Partially Approved') {
+	    if ($response->responseCode !== '00' && 'SUCCESS' !== $response->responseMessage || $response->responseMessage === 'Partially Approved') {
 			if ($response->responseCode === '10' || $response->responseMessage === 'Partially Approved') {
 				try {
 					$response->void()->withDescription('POST_AUTH_USER_DECLINE')->execute();
@@ -637,7 +637,7 @@ abstract class AbstractGateway extends WC_Payment_Gateway_Cc {
 		}
 
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName
-		if ( '00' !== $response->responseCode  && 'SUCCESS' !== $response->responseCode ) {
+		if ( '00' !== $response->responseCode  && 'SUCCESS' !== $response->responseMessage ) {
 			$woocommerce = WC();
 			$decline_message = $this->get_decline_message($response->responseCode);
 
