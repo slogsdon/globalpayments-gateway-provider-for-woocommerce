@@ -36,29 +36,8 @@ class HeartlandGateway extends AbstractGateway {
 	 *
 	 * @var bool
 	 */
-	public $allow_gift_cards;
+	public $allow_gift_cards;	
 	
-	/**
-	 * AVS CVN auto reverse condition
-	 *
-	 * @var bool
-	 */
-	public $check_avs_cvv;
-	
-	/**
-	 * AVS result codes
-	 *
-	 * @var array
-	 */
-	public $avs_reject_conditions;
-	
-	/**
-	 * CVN result codes
-	 *
-	 * @var array
-	 */
-	public $cvn_reject_conditions;
-
 	public function configure_method_settings() {
 		$this->id                 = 'globalpayments_heartland';
 		$this->method_title       = __( 'Heartland', 'globalpayments-gateway-provider-for-woocommerce' );
@@ -106,13 +85,13 @@ class HeartlandGateway extends AbstractGateway {
 		        'title'       => __( 'AVS Reject Conditions', 'globalpayments-gateway-provider-for-woocommerce' ),
 		        'type'        => 'multiselect',
 		        'description' => __( 'Choose for which AVS result codes, the transaction must be auto reveresed.'),
-		        'options'     => $this->avsRejectionConditions(),
+		        'options'     => $this->avs_rejection_conditions(),
 		    ),
 		    'cvn_reject_conditions'    => array(
 		        'title'       => __( 'CVN Reject Conditions', 'globalpayments-gateway-provider-for-woocommerce' ),
 		        'type'        => 'multiselect',
 		        'description' => __( 'Choose for which CVN result codes, the transaction must be auto reveresed.'),
-		        'options'     => $this->cvnRejectionConditions(),
+		        'options'     => $this->cvn_rejection_conditions(),
 		    ),
 		);
 	}
@@ -224,7 +203,7 @@ class HeartlandGateway extends AbstractGateway {
 	 * @return array	 * 
 	 */
 	public function process_payment( $order_id ) {
-		$order         = new WC_Order( $order_id );
+	    $order         = new WC_Order( $order_id );
 		$request       = $this->prepare_request( $this->payment_action, $order );
 		$response      = $this->submit_request( $request );
 		$is_successful = $this->handle_response( $request, $response );
@@ -269,7 +248,7 @@ class HeartlandGateway extends AbstractGateway {
 		);
 	}
 	
-	private function avsRejectionConditions()
+	public function avs_rejection_conditions()
 	{
 	    return array(
 	        'A'  => 'Address matches, zip No Match',
@@ -291,7 +270,7 @@ class HeartlandGateway extends AbstractGateway {
 	    );
 	}
 	
-	private function cvnRejectionConditions()
+	public function cvn_rejection_conditions()
 	{
 	    return array(
 	        'N' => 'Not Matching',
