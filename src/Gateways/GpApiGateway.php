@@ -112,4 +112,10 @@ class GpApiGateway extends AbstractGateway {
 
 		return __( 'An error occurred while processing the card.', 'globalpayments-gateway-provider-for-woocommerce' );
 	}
+    public function cvn_rejection_conditions()
+    {}
+
+    public function avs_rejection_conditions()
+    {}
+
 }
